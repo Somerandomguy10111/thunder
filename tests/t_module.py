@@ -1,6 +1,6 @@
 import torch
 from hollarek.devtools import Unittest
-from tests.t_thunder.mnist import MnistMLP
+from tests.mnist import MnistMLP
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader, Dataset
