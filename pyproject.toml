@@ -1,0 +1,9 @@
+[project]
+name = "Thunder"
+version = "0.2.0"
+description = "Really straightforward machine learning using pytorch lightning"
+authors = [{name = "Daniel Hollarek", email = "daniel.hollarek@goglemail.com"}]
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
