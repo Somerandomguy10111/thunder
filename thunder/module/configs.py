@@ -29,6 +29,7 @@ class RunConfigs:
     batch_size : int = 32
     seed : int = 42
     checkpoint_on_epoch : bool = True
+    print_full_stacktrace : bool = False
     save_folderpath = os.path.expanduser(f'~/.py_thunder')
 
 

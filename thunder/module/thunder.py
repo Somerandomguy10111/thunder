@@ -63,14 +63,18 @@ class Thunder(LightningModule):
         pl_trainer = Trainer(**kwargs)
         train_data = self.get_dataloader(data=train_data, run_configs=run_configs)
         val_data = self.get_dataloader(data=val_data, run_configs=run_configs)
+
         err = None
         try:
             pl_trainer.fit(model=self, train_dataloaders=train_data, val_dataloaders=val_data)
         except Exception as e:
-            self.log_relegant_stacktrace(e)
+            self.log_relevant_stacktrace(e)
             err = e
         if err:
-            raise Exception(f'Encountered excpetion during training routine. Aborting ...')
+            if run_configs.print_full_stacktrace:
+                raise err
+            else:
+                raise Exception(f'Encountered excpetion during training routine. Aborting ...')
 
     def get_callbacks(self, run_configs : RunConfigs) -> list[Callback]:
         callbacks = []
@@ -166,7 +170,7 @@ class Thunder(LightningModule):
             return batch
 
     @staticmethod
-    def log_relegant_stacktrace(err : Exception):
+    def log_relevant_stacktrace(err : Exception):
         err_class, err_instance, err_traceback = err.__class__, err, err.__traceback__
         tb_list = traceback.extract_tb(err_traceback)
 
