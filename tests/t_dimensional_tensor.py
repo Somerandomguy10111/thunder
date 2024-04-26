@@ -1,5 +1,5 @@
 from thunder.dtypes import Tensor1D, Tensor2D, Tensor3D, Tensor4D
-from hollarek.devtools import Unittest
+from holytools.devtools import Unittest
 import torch
 
 class TestDimensionalTensors(Unittest):

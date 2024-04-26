@@ -1,5 +1,5 @@
 import torch
-from hollarek.devtools import Unittest
+from holytools.devtools import Unittest
 from tests.mnist import MnistMLP
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
