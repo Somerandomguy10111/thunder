@@ -4,23 +4,26 @@ from tests.mnist import MnistMLP
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader, Dataset
+from torchvision import datasets, transforms
+
 from thunder.module import ComputeConfigs, SGD, Adam, RunConfigs
 
-# Define an empty dataset
-class EmptyDataset(Dataset):
-    def __len__(self):
-        return 0  # No data
+# ---------------------------------------------------------
 
-    def __getitem__(self, idx):
-        raise IndexError("Empty dataset")
-
-# Create an empty DataLoader
-empty_dataloader = DataLoader(EmptyDataset(), batch_size=1)  # Batch size can be any number, it doesn't matter here
 
 
 
 class TestThunderModel(Unittest):
     def test_thunder_model_round_trip(self):
+        class EmptyDataset(Dataset):
+            def __len__(self):
+                return 0  # No data
+
+            def __getitem__(self, idx):
+                raise IndexError("Empty dataset")
+
+        empty_dataloader = DataLoader(EmptyDataset(),batch_size=1)
+
         compute_configs = ComputeConfigs(dtype=torch.float64)
         descent = SGD(momentum=0.01)
         original_model = MnistMLP(compute_configs=compute_configs, descent=descent)
@@ -45,18 +48,19 @@ class TestThunderModel(Unittest):
 
 
     def test_training(self):
-        from torchvision import datasets, transforms
+        class CustomMNIST(datasets.MNIST):
+            def __getitem__(self, index):
+                x, y = super(CustomMNIST, self).__getitem__(index)
+                return x, y
+
         transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+        mnist_train = CustomMNIST('/tmp/mnist', train=True, download=True, transform=transform)
+        mnist_test = CustomMNIST('/tmp/mnist', train=False, download=True, transform=transform)
 
-        mnist_train = datasets.MNIST('/tmp/mnist', train=True, download=True, transform=transform)
-        mnist_test = datasets.MNIST('/tmp/mnist', train=False, download=True, transform=transform)
 
-
-        # x,y = mnist_train[0]
-        # print(f'x,y types: {type(x)}, {type(y)}')
-        # print(f'x, y datatypes = {x.dtype}, {y.dtype}')
-        # print(f'x, y device = {x.device}, {y.device}')
-
+        test_x, test_y = mnist_test[0]
+        self.assertEqual(test_x.dtype, torch.float32)
+        self.assertIsInstance(test_y, int)
         train_loader = DataLoader(mnist_train, batch_size=64, shuffle=True, num_workers=3)
         val_loader = DataLoader(mnist_test, batch_size=64, shuffle=False)
 
