@@ -1,6 +1,6 @@
-hollarek @ git+https://git@github.com/Somerandomguy10111/hollarek.git
 matplotlib
 pytorch_lightning
 torch
 torchvision
 wandb
+holytools
