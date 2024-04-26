@@ -95,8 +95,9 @@ class Thunder(LightningModule):
 
     def training_step(self, batch : Tensor, batch_idx):
         x, y = batch
-        if not (x.dtype == y.dtype == self.compute_configs.dtype):
-            raise ValueError(f'Batch dtype is {batch.dtype} but model dtype is {self.dtype}')
+        dtypes_match = x.dtype == y.dtype == self.compute_configs.dtype
+        if not dtypes_match:
+            raise ValueError(f'Batch x,y dtypes = \"{x.dtype}\",\"{y.dtype}\" but model dtype is \"{self.dtype}\"')
 
         loss = self.get_loss(predicted=self(x), target=y)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
