@@ -3,7 +3,12 @@ from typing import Optional, Union, Dict, Any
 from abc import abstractmethod
 from datetime import datetime
 import pickle
+import traceback
+import linecache
+from holytools.logging import make_logger
 
+import torch
+import pytorch_lightning
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from pytorch_lightning.loggers import Logger
@@ -15,6 +20,8 @@ from .configs import WBConfig, ComputeConfigs, RunConfigs, ThunderConfig
 from .descent import Descent, Adam
 from .viewer import Viewer
 # ---------------------------------------------------------
+
+thunderLogger = make_logger()
 
 class Thunder(LightningModule):
     def __init__(self, descent : Descent = Adam(),
@@ -56,8 +63,14 @@ class Thunder(LightningModule):
         pl_trainer = Trainer(**kwargs)
         train_data = self.get_dataloader(data=train_data, run_configs=run_configs)
         val_data = self.get_dataloader(data=val_data, run_configs=run_configs)
-        pl_trainer.fit(model=self, train_dataloaders=train_data, val_dataloaders=val_data)
-
+        err = None
+        try:
+            pl_trainer.fit(model=self, train_dataloaders=train_data, val_dataloaders=val_data)
+        except Exception as e:
+            self.log_relegant_stacktrace(e)
+            err = e
+        if err:
+            raise Exception(f'Encountered excpetion during training routine. Aborting ...')
 
     def get_callbacks(self, run_configs : RunConfigs) -> list[Callback]:
         callbacks = []
@@ -78,7 +91,7 @@ class Thunder(LightningModule):
 
     def training_step(self, batch : Tensor, batch_idx):
         x, y = batch
-        if x.dtype == y.dtype == self.compute_configs.dtype:
+        if not (x.dtype == y.dtype == self.compute_configs.dtype):
             raise ValueError(f'Batch dtype is {batch.dtype} but model dtype is {self.dtype}')
 
         loss = self.get_loss(predicted=self(x), target=y)
@@ -127,6 +140,7 @@ class Thunder(LightningModule):
         checkpoint['thunder_configs'] = thunder_configs
 
     # ---------------------------------------------------------
+    # logging/viewing
 
     @classmethod
     def get_name(cls) -> str:
@@ -150,3 +164,25 @@ class Thunder(LightningModule):
     def _sample_viewing_batch(test_dataloader : DataLoader) -> Tensor:
         for batch in test_dataloader:
             return batch
+
+    @staticmethod
+    def log_relegant_stacktrace(err : Exception):
+        err_class, err_instance, err_traceback = err.__class__, err, err.__traceback__
+        tb_list = traceback.extract_tb(err_traceback)
+
+        def is_relevant(tb):
+            not_lightning = not os.path.dirname(pytorch_lightning.__file__) in tb.filename
+            not_torch = not os.path.dirname(torch.__file__) in tb.filename
+            return not_lightning and not_torch
+
+        relevant_tb = [tb for tb in tb_list if is_relevant(tb)]
+
+        if relevant_tb:
+            err_msg = "\nEncountered error during training routine. Relevant stacktrace:"
+            for frame in relevant_tb:
+                file_path = frame.filename
+                line_number = frame.lineno
+                tb_str = (f'File "{file_path}", line {line_number}, in {frame.name}\n'
+                          f'    {linecache.getline(file_path, line_number).strip()}')
+                err_msg += f'\n{err_class.__name__}: {err_instance}\n{tb_str}'
+            thunderLogger.critical(msg=err_msg)

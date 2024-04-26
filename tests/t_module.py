@@ -19,7 +19,7 @@ empty_dataloader = DataLoader(EmptyDataset(), batch_size=1)  # Batch size can be
 
 
 
-class TestModelSaveLoad(Unittest):
+class TestThunderModel(Unittest):
     def test_thunder_model_round_trip(self):
         compute_configs = ComputeConfigs(dtype=torch.float64)
         descent = SGD(momentum=0.01)
@@ -51,6 +51,12 @@ class TestModelSaveLoad(Unittest):
         mnist_train = datasets.MNIST('/tmp/mnist', train=True, download=True, transform=transform)
         mnist_test = datasets.MNIST('/tmp/mnist', train=False, download=True, transform=transform)
 
+
+        # x,y = mnist_train[0]
+        # print(f'x,y types: {type(x)}, {type(y)}')
+        # print(f'x, y datatypes = {x.dtype}, {y.dtype}')
+        # print(f'x, y device = {x.device}, {y.device}')
+
         train_loader = DataLoader(mnist_train, batch_size=64, shuffle=True, num_workers=3)
         val_loader = DataLoader(mnist_test, batch_size=64, shuffle=False)
 
@@ -61,4 +67,4 @@ class TestModelSaveLoad(Unittest):
 
 
 if __name__ == '__main__':
-    TestModelSaveLoad.execute_all()
+    TestThunderModel.execute_all()
