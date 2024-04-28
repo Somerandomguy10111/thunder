@@ -28,16 +28,19 @@ class Thunder(LightningModule):
                        compute_configs : ComputeConfigs = ComputeConfigs(),
                        monitor : Optional[Viewer] = None):
         super().__init__()
+        self.update_state(compute_configs)
         self.descent : Descent = descent
         self.compute_configs : ComputeConfigs = compute_configs
         self.viewer : Optional[Viewer] = monitor
-        self.update_state()
         self.__set__model__()
 
-    def update_state(self):
-        if not self.compute_configs.dtype == float32:
-            print(f'[Thunder module {self.get_name()}: Global default torch dtype set to {self.compute_configs.dtype}')
-            self.to(self.compute_configs.dtype)
+    def update_state(self, compute_configs : ComputeConfigs):
+        if not compute_configs.dtype == float32:
+            print(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {compute_configs.dtype}')
+            self.to(compute_configs.dtype)
+        target_device = compute_configs.torch_device
+        print(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
+        torch.set_default_device(device=target_device)
 
     @abstractmethod
     def __set__model__(self):
@@ -98,7 +101,6 @@ class Thunder(LightningModule):
         dtypes_match = x.dtype == self.compute_configs.dtype
         if not dtypes_match:
             raise ValueError(f'Batch input dtype= \"{x.dtype}\" but model dtype is \"{self.dtype}\"')
-        print(x.device, y.device)
 
         loss = self.get_loss(predicted=self(x), target=y)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
@@ -136,7 +138,7 @@ class Thunder(LightningModule):
         for key, value in checkpoint['thunder_configs'].items():
             value = pickle.loads(value)
             self.__setattr__(name=key, value=value)
-        self.update_state()
+        self.update_state(self.compute_configs)
 
     def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         thunder_configs = {}
