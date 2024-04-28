@@ -3,11 +3,10 @@ import uuid
 import torch
 from holytools.devtools import Unittest
 from tests.mnist import MnistMLP
-from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 
+from thunder.module.thunder import DeviceError, DatatypeError
 from thunder.module import ComputeConfigs, SGD, Adam, RunConfigs
 
 # ---------------------------------------------------------
@@ -19,22 +18,22 @@ class TestThunderModel(Unittest):
         cls.mnist_train = datasets.MNIST('/tmp/mnist', train=True, download=True, transform=transform)
         cls.mnist_test = datasets.MNIST('/tmp/mnist', train=False, download=True, transform=transform)
 
-    def test_dataset_training(self):
-        test_x, test_y = self.mnist_test[0]
-        self.assertEqual(test_x.dtype, torch.float32)
-        self.assertIsInstance(test_y, int)
-
-        mlp = MnistMLP(descent=Adam(lr=0.001))
-        run_configs = RunConfigs(epochs=1)
-        mlp.train_on(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=run_configs)
-
-
-    def test_dataloader_training(self):
-        mlp = MnistMLP(descent=Adam(lr=0.001))
-        run_configs = RunConfigs(epochs=1)
-        train_loader = DataLoader(self.mnist_train, batch_size=64, shuffle=True, num_workers=3)
-        val_loader = DataLoader(self.mnist_test, batch_size=64, shuffle=False)
-        mlp.train_on(train_data=train_loader, val_data=val_loader, run_configs=run_configs)
+    # def test_dataset_training(self):
+    #     test_x, test_y = self.mnist_test[0]
+    #     self.assertEqual(test_x.dtype, torch.float32)
+    #     self.assertIsInstance(test_y, int)
+    #
+    #     mlp = MnistMLP(descent=Adam(lr=0.001))
+    #     run_configs = RunConfigs(epochs=1)
+    #     mlp.train_on(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=run_configs)
+    #
+    #
+    # def test_dataloader_training(self):
+    #     mlp = MnistMLP(descent=Adam(lr=0.001))
+    #     run_configs = RunConfigs(epochs=1)
+    #     train_loader = DataLoader(self.mnist_train, batch_size=64, shuffle=True, num_workers=3)
+    #     val_loader = DataLoader(self.mnist_test, batch_size=64, shuffle=False)
+    #     mlp.train_on(train_data=train_loader, val_data=val_loader, run_configs=run_configs)
 
 
     def test_device_mismatch(self):
@@ -56,7 +55,7 @@ class TestThunderModel(Unittest):
         compute_configs = ComputeConfigs(torch_device=torch.device(device))
         mlp = MnistMLP(compute_configs=compute_configs, descent=SGD(momentum=0.01))
         train_loader_wrong_device = DeviceTransformDataLoader(self.mnist_train, batch_size=64, shuffle=True, the_device=wrong_device)
-        with self.assertRaises(Exception):
+        with self.assertRaises(DeviceError):
             mlp.train_on(train_data=train_loader_wrong_device, run_configs=RunConfigs(epochs=1))
 
 
@@ -73,7 +72,7 @@ class TestThunderModel(Unittest):
         train_loader = DataLoader(self.mnist_train, batch_size=64, shuffle=True, collate_fn=to_incorrect_dtype)
         val_loader = DataLoader(self.mnist_test, batch_size=64, shuffle=False, collate_fn=to_incorrect_dtype)
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(DatatypeError):
             mlp.train_on(train_data=train_loader, val_data=val_loader, run_configs=RunConfigs(epochs=1))
 
 

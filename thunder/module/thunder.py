@@ -35,6 +35,8 @@ class Thunder(LightningModule):
         self.__set__model__()
 
     def update_state(self, compute_configs : ComputeConfigs):
+        # This is so that the weights get initialized on the correct device with correct dtype
+        # It does not in general influence where tensors get created or with what dtype to the best of my knowledge
         if not compute_configs.dtype == float32:
             print(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {compute_configs.dtype}')
             self.to(compute_configs.dtype)
@@ -98,9 +100,15 @@ class Thunder(LightningModule):
 
     def training_step(self, batch : Tensor, batch_idx):
         x, y = batch
-        dtypes_match = x.dtype == self.compute_configs.dtype
+        dtypes_match = x.dtype == self.dtype == self.compute_configs.dtype
         if not dtypes_match:
-            raise ValueError(f'Batch input dtype= \"{x.dtype}\" but model dtype is \"{self.dtype}\"')
+            raise DatatypeError(f'Batch input dtype = \"{x.dtype}\", model dtype is \"{self.dtype}\"; '
+                             f'Compute configs dictate : \"{self.compute_configs.dtype}\"')
+        devices_match = x.device.type == self.device.type == self.compute_configs.torch_device.type
+        if not devices_match:
+            raise DeviceError(f'Batch input device = \"{x.device}\", model device is \"{self.device}\"; '
+                             f'Compute configs dictate : \"{self.compute_configs.torch_device}\"')
+
 
         loss = self.get_loss(predicted=self(x), target=y)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
@@ -194,3 +202,11 @@ class Thunder(LightningModule):
                           f'    {linecache.getline(file_path, line_number).strip()}')
                 err_msg += f'\n{err_class.__name__}: {err_instance}\n{tb_str}'
             thunderLogger.critical(msg=err_msg)
+
+class DeviceError(Exception):
+    pass
+
+class DatatypeError(Exception):
+    pass
+
+
