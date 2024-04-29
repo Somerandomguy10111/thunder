@@ -6,7 +6,6 @@ from torch.nn import CrossEntropyLoss
 import random
 
 from thunder.module import Thunder
-from thunder import Viewer
 
 
 # ---------------------------------------------------------
@@ -29,8 +28,9 @@ class MnistMLP(Thunder):
         return loss_fn(predicted, target)
 
 
-class MNISTViewer(Viewer):
-    def view(self, batch, output):
+class MNISTViewer:
+    @staticmethod
+    def view(batch, output):
         x,y = batch
         fig, axs = plt.subplots(1, 5, figsize=(15, 3))
         rand_indices = [random.randint(0, x.size(0)-1) for _ in range(5)]

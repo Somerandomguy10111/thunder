@@ -2,14 +2,10 @@ from __future__ import annotations
 
 import traceback
 import linecache
-from abc import abstractmethod
-from typing import Optional
-
 import pytorch_lightning
 import os
 from holytools.logging import make_logger
 import torch
-from torch import Tensor
 
 from .configs import WBConfig, RunConfigs, Logger
 # ---------------------------------------------------------
@@ -51,14 +47,3 @@ def get_wb_logger(run_configs: RunConfigs) -> Logger:
         os.makedirs(logger.save_dir)
     return logger
 
-
-class Viewer:
-    def __init__(self):
-        self.sample : Optional[Tensor] = None
-
-    @abstractmethod
-    def view(self, batch : Tensor, output : Tensor):
-        pass
-
-    def save(self, output : Tensor):
-        pass

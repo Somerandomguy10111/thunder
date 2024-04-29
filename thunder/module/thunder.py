@@ -11,16 +11,15 @@ from torch.optim import Optimizer
 from torch.utils.data import DataLoader, Dataset
 
 from .configs import ComputeConfigs, RunConfigs, ThunderConfig, ComputeConformDataset
-from .logging import log_relevant_stacktrace, get_wb_logger, thunderLogger, Viewer
+from .logging import log_relevant_stacktrace, get_wb_logger, thunderLogger
 
 # ---------------------------------------------------------
 
 class Thunder(LightningModule):
-    def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs(), viewer : Optional[Viewer] = None):
+    def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
         self.set_compute_defaults(compute_configs)
         self.compute_configs : ComputeConfigs = compute_configs
-        self.viewer : Optional[Viewer] = viewer
         self.optimizer : Optional[Optimizer] = None
         self.trainer : Optional[Trainer] = None
         self.__set__model__()
@@ -54,9 +53,6 @@ class Thunder(LightningModule):
     def train_on(self, train_data: Dataset,
                        val_data: Optional[Dataset] = None,
                        run_configs : RunConfigs = RunConfigs()):
-        if self.viewer and not val_data is None:
-            self.viewer.sample = train_data[0]
-
         batch_size = run_configs.batch_size
         kwargs = {'accelerator' : self.compute_configs.get_accelerator(),
                   'logger' : get_wb_logger(run_configs=run_configs),
@@ -103,17 +99,6 @@ class Thunder(LightningModule):
         if self.optimizer is None:
             raise ValueError('Optimizer not set. Cannot configure optimizer for trainer fit routine')
         return self.optimizer
-
-
-    def on_train_epoch_end(self) -> None:
-        if not self.viewer:
-            return
-
-        batch = self.viewer.sample
-        x,y = batch
-        x,y = x.to(self.device), y.to(self.device)
-        viewer = self.viewer
-        viewer.view(batch=batch, output=self(x))
 
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
