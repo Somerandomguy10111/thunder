@@ -19,19 +19,21 @@ from .logging import log_relevant_stacktrace, get_wb_logger, thunderLogger
 class Thunder(LightningModule):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs(), viewer : Optional[Viewer] = None):
         super().__init__()
-        self.update_state(compute_configs)
+        self.set_compute_defaults(compute_configs)
         self.compute_configs : ComputeConfigs = compute_configs
         self.viewer : Optional[Viewer] = viewer
         self.optimizer : Optional[Optimizer] = None
         self.trainer : Optional[Trainer] = None
         self.__set__model__()
 
-    def update_state(self, compute_configs : ComputeConfigs):
+    def set_compute_defaults(self, compute_configs : ComputeConfigs):
         target_device = compute_configs.get_device()
+        target_dtype = compute_configs.dtype
+        
         thunderLogger.warn(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
         torch.set_default_device(device=target_device)
-        thunderLogger.warn(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {compute_configs.dtype}')
-        self.to(compute_configs.dtype)
+        thunderLogger.warn(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {target_dtype}')
+        torch.set_default_dtype(d=target_dtype)
 
     @abstractmethod
     def __set__model__(self):
@@ -61,7 +63,6 @@ class Thunder(LightningModule):
                   'callbacks' : self.get_callbacks(run_configs=run_configs)}
         pl_trainer = Trainer(**kwargs)
         self.optimizer = run_configs.descent.get_optimizer(params=self.parameters())
-        print(f'self.optimizer = {self.optimizer}')
         train_data = DataLoader(train_data, batch_size=run_configs.batch_size)
         val_data = DataLoader(val_data, batch_size=run_configs.batch_size) if val_data else None
 
@@ -98,7 +99,6 @@ class Thunder(LightningModule):
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
-    # this is called during trainer.fit
     def configure_optimizers(self) -> Optimizer:
         if self.optimizer is None:
             raise ValueError('Optimizer not set. Cannot configure optimizer for trainer fit routine')
@@ -139,7 +139,7 @@ class Thunder(LightningModule):
         for key, value in checkpoint['thunder_configs'].items():
             value = pickle.loads(value)
             self.__setattr__(name=key, value=value)
-        self.update_state(self.compute_configs)
+        self.set_compute_defaults(self.compute_configs)
 
     def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         thunder_configs = {}
