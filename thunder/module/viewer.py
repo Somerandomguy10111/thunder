@@ -6,7 +6,7 @@ from torch import Tensor
 
 class Viewer:
     def __init__(self):
-        self.sample_batch : Optional[Tensor] = None
+        self.sample : Optional[Tensor] = None
 
     @abstractmethod
     def view(self, batch : Tensor, output : Tensor):

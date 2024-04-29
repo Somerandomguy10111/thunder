@@ -1,48 +1,38 @@
-import os.path
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Dict, Any
 from abc import abstractmethod
 from datetime import datetime
 import pickle
-import traceback
-import linecache
-from holytools.logging import make_logger
-
 import torch
-import pytorch_lightning
+
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
-from pytorch_lightning.loggers import Logger
 from torch import Tensor, float32
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader, Dataset
 
 from .configs import WBConfig, ComputeConfigs, RunConfigs, ThunderConfig
-from .descent import Descent, Adam
 from .viewer import Viewer
+from .logging import log_relevant_stacktrace, get_wb_logger
+
+
 # ---------------------------------------------------------
 
-thunderLogger = make_logger()
 
 class Thunder(LightningModule):
-    def __init__(self, descent : Descent = Adam(),
-                       compute_configs : ComputeConfigs = ComputeConfigs(),
+    def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs(),
                        monitor : Optional[Viewer] = None):
         super().__init__()
         self.update_state(compute_configs)
-        self.descent : Descent = descent
         self.compute_configs : ComputeConfigs = compute_configs
         self.viewer : Optional[Viewer] = monitor
         self.__set__model__()
 
     def update_state(self, compute_configs : ComputeConfigs):
-        # This is so that the weights get initialized on the correct device with correct dtype
-        # It does not in general influence where tensors get created or with what dtype to the best of my knowledge
-        if not compute_configs.dtype == float32:
-            print(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {compute_configs.dtype}')
-            self.to(compute_configs.dtype)
-        target_device = compute_configs.torch_device
+        target_device = compute_configs.get_device()
         print(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
         torch.set_default_device(device=target_device)
+        print(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {compute_configs.dtype}')
+        self.to(compute_configs.dtype)
 
     @abstractmethod
     def __set__model__(self):
@@ -52,34 +42,37 @@ class Thunder(LightningModule):
     def forward(self, x):
         pass
 
-    # ---------------------------------------------------------
+    @classmethod
+    def get_name(cls) -> str:
+        return cls.__name__
 
-    def train_on(self, train_data: Union[Dataset, DataLoader],
-                 val_data: Optional[Union[Dataset, DataLoader]] = None,
-                 run_configs : RunConfigs = RunConfigs()):
-        if self.viewer and val_data:
-            self.viewer.sample_batch = self._sample_viewing_batch(test_dataloader=val_data)
+    # ---------------------------------------------------------
+    # training routine
+
+    def train_on(self, train_data: Dataset, val_data: Optional[Dataset] = None, run_configs : RunConfigs = RunConfigs()):
+        if self.viewer and not val_data is None:
+            self.viewer.sample = train_data[0]
 
         kwargs = {'accelerator' : self.compute_configs.get_accelerator(),
-                  'logger' : self.get_logger(run_configs=run_configs),
+                  'logger' : get_wb_logger(run_configs=run_configs),
                   'devices' : self.compute_configs.num_gpus,
                   'max_epochs' : run_configs.epochs,
                   'callbacks' : self.get_callbacks(run_configs=run_configs)}
         pl_trainer = Trainer(**kwargs)
-        train_data = self.get_dataloader(data=train_data, run_configs=run_configs)
-        val_data = self.get_dataloader(data=val_data, run_configs=run_configs)
+        train_data = DataLoader(train_data, batch_size=run_configs.batch_size)
+        val_data = DataLoader(val_data, batch_size=run_configs.batch_size) if val_data else None
 
         err = None
         try:
             pl_trainer.fit(model=self, train_dataloaders=train_data, val_dataloaders=val_data)
         except Exception as e:
-            self.log_relevant_stacktrace(e)
+            log_relevant_stacktrace(e)
             err = e
+
         if err:
-            if run_configs.print_full_stacktrace:
-                raise err
-            else:
-                raise Exception(f'Encountered excpetion during training routine. Aborting ...')
+            err = err if run_configs.print_full_stacktrace else Exception('Encountered excpetion during training routine. Aborting ...')
+            raise err
+
 
     def get_callbacks(self, run_configs : RunConfigs) -> list[Callback]:
         callbacks = []
@@ -91,24 +84,12 @@ class Thunder(LightningModule):
         return callbacks
 
 
-    @staticmethod
-    def get_dataloader(data : Union[Dataset, DataLoader], run_configs : RunConfigs):
-        if isinstance(data, Dataset):
-            data = DataLoader(data, batch_size=run_configs.batch_size)
-        return data
-
-
     def training_step(self, batch : Tensor, batch_idx):
         x, y = batch
         dtypes_match = x.dtype == self.dtype == self.compute_configs.dtype
         if not dtypes_match:
             raise DatatypeError(f'Batch input dtype = \"{x.dtype}\", model dtype is \"{self.dtype}\"; '
                              f'Compute configs dictate : \"{self.compute_configs.dtype}\"')
-        devices_match = x.device.type == self.device.type == self.compute_configs.torch_device.type
-        if not devices_match:
-            raise DeviceError(f'Batch input device = \"{x.device}\", model device is \"{self.device}\"; '
-                             f'Compute configs dictate : \"{self.compute_configs.torch_device}\"')
-
 
         loss = self.get_loss(predicted=self(x), target=y)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
@@ -124,7 +105,7 @@ class Thunder(LightningModule):
         if not self.viewer:
             return
 
-        batch = self.viewer.sample_batch
+        batch = self.viewer.sample
         x,y = batch
         x,y = x.to(self.device), y.to(self.device)
         viewer = self.viewer
@@ -155,58 +136,7 @@ class Thunder(LightningModule):
                 thunder_configs[key] = pickle.dumps(value)
         checkpoint['thunder_configs'] = thunder_configs
 
-    # ---------------------------------------------------------
-    # logging/viewing
 
-    @classmethod
-    def get_name(cls) -> str:
-        return cls.__name__
-
-    def get_logger(self, run_configs: RunConfigs) -> Logger:
-        kwargs = {
-            "lr": self.descent.lr,
-            "batch_size": run_configs.batch_size,
-            "epochs": run_configs.epochs,
-            "optimizer": self.descent.get_algorithm().__name__,
-            "seed": run_configs.seed
-        }
-        logger = WBConfig(**kwargs).get_logger()
-        if not os.path.isdir(logger.save_dir):
-            os.makedirs(logger.save_dir)
-        return logger
-
-
-    @staticmethod
-    def _sample_viewing_batch(test_dataloader : DataLoader) -> Tensor:
-        for batch in test_dataloader:
-            return batch
-
-    @staticmethod
-    def log_relevant_stacktrace(err : Exception):
-        err_class, err_instance, err_traceback = err.__class__, err, err.__traceback__
-        tb_list = traceback.extract_tb(err_traceback)
-
-        def is_relevant(tb):
-            not_lightning = not os.path.dirname(pytorch_lightning.__file__) in tb.filename
-            not_torch = not os.path.dirname(torch.__file__) in tb.filename
-            return not_lightning and not_torch
-
-        relevant_tb = [tb for tb in tb_list if is_relevant(tb)]
-
-        if relevant_tb:
-            err_msg = "\nEncountered error during training routine. Relevant stacktrace:"
-            for frame in relevant_tb:
-                file_path = frame.filename
-                line_number = frame.lineno
-                tb_str = (f'File "{file_path}", line {line_number}, in {frame.name}\n'
-                          f'    {linecache.getline(file_path, line_number).strip()}')
-                err_msg += f'\n{err_class.__name__}: {err_instance}\n{tb_str}'
-            thunderLogger.critical(msg=err_msg)
-
-class DeviceError(Exception):
-    pass
 
 class DatatypeError(Exception):
     pass
-
-

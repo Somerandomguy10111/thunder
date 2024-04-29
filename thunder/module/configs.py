@@ -8,6 +8,7 @@ from pytorch_lightning.loggers import Logger, WandbLogger
 from dataclasses import dataclass
 from torch import device, dtype
 from typing import Optional
+from .descent import Descent, Adam
 # ---------------------------------------------------------
 
 class ThunderConfig:
@@ -15,12 +16,15 @@ class ThunderConfig:
 
 @dataclass
 class ComputeConfigs(ThunderConfig):
-    torch_device : device = device("cuda" if torch.cuda.is_available() else "cpu")
     num_gpus: int = torch.cuda.device_count() if torch.cuda.is_available() else 0
     dtype : dtype = torch.float32
 
     def get_accelerator(self) -> str:
         return "gpu" if self.num_gpus > 0 else "cpu"
+
+    def get_device(self) -> torch.device:
+        torch_device = device('cuda') if self.num_gpus > 0 else torch.device('cpu')
+        return torch_device
 
 
 @dataclass
@@ -28,6 +32,7 @@ class RunConfigs:
     epochs : int = 1
     batch_size : int = 32
     seed : int = 42
+    descent: Descent = Adam(),
     checkpoint_on_epoch : bool = True
     print_full_stacktrace : bool = False
     save_folderpath = os.path.expanduser(f'~/.py_thunder')
