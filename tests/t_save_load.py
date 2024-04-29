@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 
 # ---------------------------------------------------------
 
-class TestThunderModel(Unittest):
+class TestThunderSaveLoad(Unittest):
 
     def test_thunder_model_round_trip(self):
         class EmptyDataset(Dataset):
@@ -33,4 +33,4 @@ class TestThunderModel(Unittest):
         self.assertEqual(str(original_attr),str(new_attr))
 
 if __name__ == "__main__":
-    TestThunderModel.execute_all()
+    TestThunderSaveLoad.execute_all()
