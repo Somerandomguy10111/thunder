@@ -18,7 +18,7 @@ class TestComputeParams(Unittest):
         compute_configs = ComputeConfigs(num_gpus=1, dtype=torch.float64)
         mlp = MnistMLP(compute_configs=compute_configs)
         self.assertEqual(mlp.dtype, torch.float64)
-        self.assertEqual(mlp.device, torch.device('cuda'))
+        self.assertEqual(mlp.device.type, compute_configs.device.type)
 
 
     # def test_training(self):

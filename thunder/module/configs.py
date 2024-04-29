@@ -24,7 +24,8 @@ class ComputeConfigs(ThunderConfig):
     def get_accelerator(self) -> str:
         return "gpu" if self.num_gpus > 0 else "cpu"
 
-    def get_device(self) -> torch.device:
+    @property
+    def device(self) -> torch.device:
         torch_device = device('cuda') if self.num_gpus > 0 else torch.device('cpu')
         return torch_device
 

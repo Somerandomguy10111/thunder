@@ -24,11 +24,11 @@ class Thunder(LightningModule):
         self.optimizer : Optional[Optimizer] = None
         self.trainer : Optional[Trainer] = None
         self.__set__model__()
-        # self.to(dtype=compute_configs.dtype)
+        self.to(dtype=compute_configs.dtype, device=compute_configs.device)
         print(f'Model device, dtype = {self.device}, {self.dtype}')
 
     def set_compute_defaults(self, compute_configs : ComputeConfigs):
-        target_device = compute_configs.get_device()
+        target_device = compute_configs.device
         target_dtype = compute_configs.dtype
         
         thunderLogger.warn(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
