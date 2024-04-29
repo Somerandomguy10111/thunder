@@ -34,7 +34,7 @@ class RunConfigs:
     epochs : int = 1
     batch_size : int = 32
     seed : int = 42
-    descent: Descent = Adam(),
+    descent: Descent = Adam()
     checkpoint_on_epoch : bool = True
     print_full_stacktrace : bool = False
     save_folderpath = os.path.expanduser(f'~/.py_thunder')

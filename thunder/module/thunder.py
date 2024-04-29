@@ -23,6 +23,7 @@ class Thunder(LightningModule):
         self.compute_configs : ComputeConfigs = compute_configs
         self.viewer : Optional[Viewer] = viewer
         self.optimizer : Optional[Optimizer] = None
+        self.trainer : Optional[Trainer] = None
         self.__set__model__()
 
     def update_state(self, compute_configs : ComputeConfigs):
@@ -59,7 +60,7 @@ class Thunder(LightningModule):
                   'max_epochs' : run_configs.epochs,
                   'callbacks' : self.get_callbacks(run_configs=run_configs)}
         pl_trainer = Trainer(**kwargs)
-        self.optimizer = self.descent.get_optimizer(params=self.parameters())
+        self.optimizer = run_configs.descent.get_optimizer(params=self.parameters())
         print(f'self.optimizer = {self.optimizer}')
         train_data = DataLoader(train_data, batch_size=run_configs.batch_size)
         val_data = DataLoader(val_data, batch_size=run_configs.batch_size) if val_data else None
@@ -122,9 +123,17 @@ class Thunder(LightningModule):
     # save/load
 
     @classmethod
-    def load(cls, checkpoint_path: str):
-        thunder = cls.load_from_checkpoint(checkpoint_path)
+    def load(cls, fpath: str):
+        thunder = cls.load_from_checkpoint(fpath)
         return thunder
+
+    def save(self, fpath : str):
+        if self.trainer is None:
+            raise ValueError('Trainer is None. Pytorch lightning can only be saved after running trainer.fit(...) on model. Aborting ...')
+        if self.trainer.model is None:
+            raise ValueError('Trainer model is None. Pytorch lightning can only be saved after running trainer.fit(...) on model. Aborting ...')
+        self.trainer.save_checkpoint(filepath=fpath)
+
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         for key, value in checkpoint['thunder_configs'].items():
