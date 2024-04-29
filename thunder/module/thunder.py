@@ -22,6 +22,7 @@ class Thunder(LightningModule):
         self.update_state(compute_configs)
         self.compute_configs : ComputeConfigs = compute_configs
         self.viewer : Optional[Viewer] = viewer
+        self.optimizer : Optional[Optimizer] = None
         self.__set__model__()
 
     def update_state(self, compute_configs : ComputeConfigs):
@@ -58,6 +59,8 @@ class Thunder(LightningModule):
                   'max_epochs' : run_configs.epochs,
                   'callbacks' : self.get_callbacks(run_configs=run_configs)}
         pl_trainer = Trainer(**kwargs)
+        self.optimizer = self.descent.get_optimizer(params=self.parameters())
+        print(f'self.optimizer = {self.optimizer}')
         train_data = DataLoader(train_data, batch_size=run_configs.batch_size)
         val_data = DataLoader(val_data, batch_size=run_configs.batch_size) if val_data else None
 
@@ -94,10 +97,11 @@ class Thunder(LightningModule):
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
-
+    # this is called during trainer.fit
     def configure_optimizers(self) -> Optimizer:
-        params = self.parameters()
-        return self.descent.get_optimizer(params=params)
+        if self.optimizer is None:
+            raise ValueError('Optimizer not set. Cannot configure optimizer for trainer fit routine')
+        return self.optimizer
 
 
     def on_train_epoch_end(self) -> None:

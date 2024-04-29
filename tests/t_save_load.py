@@ -30,7 +30,6 @@ class TestThunderModel(Unittest):
         save_checkpoint = ModelCheckpoint(dirpath=save_path, every_n_epochs=1)
 
         trainer = Trainer(callbacks=[save_checkpoint], logger=False)
-        trainer.fit(model=original_model, train_dataloaders=empty_dataloader)
         trainer.save_checkpoint(filepath=save_path)
 
         new_model = MnistMLP.load(checkpoint_path=save_path)
