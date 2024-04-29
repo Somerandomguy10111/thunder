@@ -21,15 +21,11 @@ class TestComputeParams(Unittest):
         self.assertEqual(mlp.device.type, compute_configs.device.type)
 
 
-    # def test_training(self):
-    #     test_x, test_y = self.mnist_test[0]
-    #     self.assertEqual(test_x.dtype, torch.float32)
-    #     self.assertIsInstance(test_y, int)
-    #
-    #     mlp = MnistMLP()
-    #     run_configs = RunConfigs(epochs=1)
-    #     mlp.train_on(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=run_configs)
-    #
+    def test_training(self):
+        mlp = MnistMLP()
+        run_configs = RunConfigs(epochs=1)
+        mlp.train_on(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=run_configs)
+
     #
     # def test_non_default_training(self):
     #     compute_configs = ComputeConfigs(num_gpus=1, dtype=torch.float64)

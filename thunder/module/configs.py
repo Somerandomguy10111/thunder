@@ -61,18 +61,29 @@ class WBConfig:
 
 
 
-class ComputeConfigsDataset(Dataset):
+class ComputeConformDataset(Dataset):
     def __init__(self, base_dataset : Dataset, torch_device : device, torch_dtype : dtype):
         self.base_dataset : Dataset = base_dataset
         self.device : device = torch_device
         self.dtype : dtype = torch_dtype
 
+    # noinspection
+    def __len__(self):
+        return len(self.base_dataset)
+
+
     def __getitem__(self, idx):
-        data = self.base_dataset[idx]
-        if isinstance(data, tuple):
-            data, label = data
-            data = torch.tensor(data, dtype=self.dtype).to(self.device)
-            label = torch.tensor(label, dtype=self.dtype).to(self.device)
+        content = self.base_dataset[idx]
+        if isinstance(content, tuple):
+            data, label = content
+            if isinstance(data, torch.Tensor):
+                data = data.to(dtype=self.dtype, device=self.device)
+            if isinstance(label, torch.Tensor):
+                label = label.to(dtype=self.dtype, device=self.device)
             return data, label
+        elif isinstance(content, torch.Tensor):
+            content = content.to(dtype=self.dtype, device=self.device)
         else:
-            return torch.tensor(data, dtype=self.dtype).to(self.device)
+            content = content
+
+        return content

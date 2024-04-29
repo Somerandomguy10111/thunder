@@ -10,7 +10,7 @@ from torch import Tensor
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader, Dataset
 
-from .configs import ComputeConfigs, RunConfigs, ThunderConfig
+from .configs import ComputeConfigs, RunConfigs, ThunderConfig, ComputeConformDataset
 from .logging import log_relevant_stacktrace, get_wb_logger, thunderLogger, Viewer
 
 # ---------------------------------------------------------
@@ -57,17 +57,16 @@ class Thunder(LightningModule):
         if self.viewer and not val_data is None:
             self.viewer.sample = train_data[0]
 
+        batch_size = run_configs.batch_size
         kwargs = {'accelerator' : self.compute_configs.get_accelerator(),
                   'logger' : get_wb_logger(run_configs=run_configs),
                   'devices' : self.compute_configs.num_gpus,
                   'max_epochs' : run_configs.epochs,
                   'callbacks' : self.get_callbacks(run_configs=run_configs)}
         pl_trainer = Trainer(**kwargs)
-        train_data = DeviceDtypeDataset(train_data)
-
+        train_data = self.get_dataloader(dataset=train_data, batch_size=batch_size)
+        val_data = self.get_dataloader(dataset=val_data, batch_size=batch_size) if val_data else None
         self.optimizer = run_configs.descent.get_optimizer(params=self.parameters())
-        train_data = DataLoader(train_data, batch_size=run_configs.batch_size)
-        # val_data = DataLoader(val_data, batch_size=run_configs.batch_size) if val_data else None
 
         err = None
         try:
@@ -80,6 +79,9 @@ class Thunder(LightningModule):
             err = err if run_configs.print_full_stacktrace else Exception('Encountered excpetion during training routine. Aborting ...')
             raise err
 
+    def get_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
+        compute_conform_dataset = ComputeConformDataset(dataset, self.device, self.dtype)
+        return DataLoader(compute_conform_dataset, batch_size=batch_size)
 
     def get_callbacks(self, run_configs : RunConfigs) -> list[Callback]:
         callbacks = []
