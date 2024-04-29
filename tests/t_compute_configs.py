@@ -16,7 +16,7 @@ class TestComputeParams(Unittest):
         cls.run_configs = RunConfigs(epochs=1)
 
     def test_thunder_compute_params(self):
-        compute_configs = ComputeConfigs(accelerator=1, dtype=torch.float64)
+        compute_configs = ComputeConfigs(num_gpus=1, dtype=torch.float64)
         mlp = MnistMLP(compute_configs=compute_configs)
         print(f'MLP device, dtype = {mlp.device}, {mlp.dtype}')
         self.assertEqual(mlp.dtype, torch.float64)
@@ -28,7 +28,7 @@ class TestComputeParams(Unittest):
 
 
     def test_non_default_training(self):
-        compute_configs = ComputeConfigs(accelerator=0, dtype=torch.float64)
+        compute_configs = ComputeConfigs(num_gpus=0, dtype=torch.float64)
         mlp = MnistMLP(compute_configs=compute_configs)
         mlp.train_on(train_data=self.mnist_train,run_configs=self.run_configs)
 

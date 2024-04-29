@@ -21,6 +21,10 @@ class ComputeConfigs(ThunderConfig):
     num_gpus: int = torch.cuda.device_count() if torch.cuda.is_available() else 0
     dtype : dtype = torch.float32
 
+    def get_num_devices(self) -> int:
+        num_devices = self.num_gpus if self.num_gpus > 0 else os.cpu_count()//2
+        return num_devices
+
     def get_accelerator(self) -> str:
         return "gpu" if self.num_gpus > 0 else "cpu"
 
