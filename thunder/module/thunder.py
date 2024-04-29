@@ -56,7 +56,7 @@ class Thunder(LightningModule):
         batch_size = run_configs.batch_size
         kwargs = {'accelerator' : self.compute_configs.get_accelerator(),
                   'logger' : get_wb_logger(run_configs=run_configs),
-                  'devices' : self.compute_configs.num_gpus,
+                  'devices' : self.compute_configs.get_num_devices(),
                   'max_epochs' : run_configs.epochs,
                   'callbacks' : self.get_callbacks(run_configs=run_configs)}
         pl_trainer = Trainer(**kwargs)

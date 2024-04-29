@@ -7,7 +7,7 @@ from thunder.module import RunConfigs, ComputeConfigs
 
 # ---------------------------------------------------------
 
-class TestComputeParams(Unittest):
+class TestComputeConfigs(Unittest):
     @classmethod
     def setUpClass(cls):
         transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
@@ -15,16 +15,16 @@ class TestComputeParams(Unittest):
         cls.mnist_test = datasets.MNIST('/tmp/mnist', train=False, download=True, transform=transform)
         cls.run_configs = RunConfigs(epochs=1)
 
-    # def test_thunder_compute_params(self):
-    #     compute_configs = ComputeConfigs(num_gpus=1, dtype=torch.float64)
-    #     mlp = MnistMLP(compute_configs=compute_configs)
-    #     print(f'MLP device, dtype = {mlp.device}, {mlp.dtype}')
-    #     self.assertEqual(mlp.dtype, torch.float64)
-    #     self.assertEqual(mlp.device.type, compute_configs.device.type)
-    #
-    # def test_default_training(self):
-    #     mlp = MnistMLP()
-    #     mlp.train_on(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=self.run_configs)
+    def test_thunder_compute_params(self):
+        compute_configs = ComputeConfigs(num_gpus=1, dtype=torch.float64)
+        mlp = MnistMLP(compute_configs=compute_configs)
+        print(f'MLP device, dtype = {mlp.device}, {mlp.dtype}')
+        self.assertEqual(mlp.dtype, torch.float64)
+        self.assertEqual(mlp.device.type, compute_configs.device.type)
+
+    def test_default_training(self):
+        mlp = MnistMLP()
+        mlp.train_on(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=self.run_configs)
 
 
     def test_non_default_training(self):
@@ -34,4 +34,4 @@ class TestComputeParams(Unittest):
 
 
 if __name__ == '__main__':
-    TestComputeParams.execute_all()
+    TestComputeConfigs.execute_all()

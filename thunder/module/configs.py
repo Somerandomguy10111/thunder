@@ -71,7 +71,7 @@ class ComputeConformDataset(Dataset):
         self.device : device = torch_device
         self.dtype : dtype = torch_dtype
 
-    # noinspection
+    # noinspection PyTypeChecker
     def __len__(self):
         return len(self.base_dataset)
 
