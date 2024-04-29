@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 from torch.nn import CrossEntropyLoss
 import random
 
-from thunder.module import Thunder, Viewer
+from thunder.module import Thunder
+from thunder import Viewer
+
 
 # ---------------------------------------------------------
 

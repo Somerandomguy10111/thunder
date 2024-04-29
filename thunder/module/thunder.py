@@ -11,8 +11,7 @@ from torch.optim import Optimizer
 from torch.utils.data import DataLoader, Dataset
 
 from .configs import ComputeConfigs, RunConfigs, ThunderConfig
-from .viewer import Viewer
-from .logging import log_relevant_stacktrace, get_wb_logger, thunderLogger
+from .logging import log_relevant_stacktrace, get_wb_logger, thunderLogger, Viewer
 
 # ---------------------------------------------------------
 
