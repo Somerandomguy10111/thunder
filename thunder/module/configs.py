@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+
 import os
 import torch
 
@@ -55,3 +57,6 @@ class WBConfig:
     def get_logger(self) -> Logger:
         wb_configs = asdict(self)
         return WandbLogger(save_dir=os.path.expanduser(self.log_dirpath), config=wb_configs)
+
+
+

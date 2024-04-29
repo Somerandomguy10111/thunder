@@ -22,8 +22,7 @@ class TestThunderModel(Unittest):
         empty_dataloader = DataLoader(EmptyDataset(),batch_size=1)
 
         compute_configs = ComputeConfigs(dtype=torch.float64)
-        descent = SGD(momentum=0.01)
-        original_model = MnistMLP(compute_configs=compute_configs, descent=descent)
+        original_model = MnistMLP(compute_configs=compute_configs)
 
 
         short_uuid = str(uuid.uuid4())[:5]

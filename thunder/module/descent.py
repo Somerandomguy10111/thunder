@@ -1,17 +1,14 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, asdict
 from typing import Iterable, Tuple
 
-import torch
 from torch import Tensor
 from torch.optim import Optimizer
-from .configs import ThunderConfig
+from dataclasses import asdict, dataclass
+import torch
 
 
 @dataclass
-class Descent(ThunderConfig, ABC):
+class Descent(ABC):
     lr : float = None
 
     def __post_init__(self):

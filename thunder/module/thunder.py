@@ -6,32 +6,29 @@ import torch
 
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
-from torch import Tensor, float32
+from torch import Tensor
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader, Dataset
 
-from .configs import WBConfig, ComputeConfigs, RunConfigs, ThunderConfig
+from .configs import ComputeConfigs, RunConfigs, ThunderConfig
 from .viewer import Viewer
-from .logging import log_relevant_stacktrace, get_wb_logger
-
+from .logging import log_relevant_stacktrace, get_wb_logger, thunderLogger
 
 # ---------------------------------------------------------
 
-
 class Thunder(LightningModule):
-    def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs(),
-                       monitor : Optional[Viewer] = None):
+    def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs(), viewer : Optional[Viewer] = None):
         super().__init__()
         self.update_state(compute_configs)
         self.compute_configs : ComputeConfigs = compute_configs
-        self.viewer : Optional[Viewer] = monitor
+        self.viewer : Optional[Viewer] = viewer
         self.__set__model__()
 
     def update_state(self, compute_configs : ComputeConfigs):
         target_device = compute_configs.get_device()
-        print(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
+        thunderLogger.warn(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
         torch.set_default_device(device=target_device)
-        print(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {compute_configs.dtype}')
+        thunderLogger.warn(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {compute_configs.dtype}')
         self.to(compute_configs.dtype)
 
     @abstractmethod
@@ -49,7 +46,9 @@ class Thunder(LightningModule):
     # ---------------------------------------------------------
     # training routine
 
-    def train_on(self, train_data: Dataset, val_data: Optional[Dataset] = None, run_configs : RunConfigs = RunConfigs()):
+    def train_on(self, train_data: Dataset,
+                       val_data: Optional[Dataset] = None,
+                       run_configs : RunConfigs = RunConfigs()):
         if self.viewer and not val_data is None:
             self.viewer.sample = train_data[0]
 
