@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 import os
 import torch
 
@@ -9,6 +8,7 @@ from pytorch_lightning.loggers import Logger, WandbLogger
 
 from dataclasses import dataclass
 from torch import device, dtype
+from torch.utils.data import Dataset
 from typing import Optional
 from .descent import Descent, Adam
 # ---------------------------------------------------------
@@ -60,3 +60,18 @@ class WBConfig:
 
 
 
+class ComputeConfigsDataset(Dataset):
+    def __init__(self, base_dataset : Dataset, torch_device : device, torch_dtype : dtype):
+        self.base_dataset : Dataset = base_dataset
+        self.device : device = torch_device
+        self.dtype : dtype = torch_dtype
+
+    def __getitem__(self, idx):
+        data = self.base_dataset[idx]
+        if isinstance(data, tuple):
+            data, label = data
+            data = torch.tensor(data, dtype=self.dtype).to(self.device)
+            label = torch.tensor(label, dtype=self.dtype).to(self.device)
+            return data, label
+        else:
+            return torch.tensor(data, dtype=self.dtype).to(self.device)

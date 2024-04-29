@@ -24,6 +24,8 @@ class Thunder(LightningModule):
         self.optimizer : Optional[Optimizer] = None
         self.trainer : Optional[Trainer] = None
         self.__set__model__()
+        # self.to(dtype=compute_configs.dtype)
+        print(f'Model device, dtype = {self.device}, {self.dtype}')
 
     def set_compute_defaults(self, compute_configs : ComputeConfigs):
         target_device = compute_configs.get_device()
@@ -61,9 +63,11 @@ class Thunder(LightningModule):
                   'max_epochs' : run_configs.epochs,
                   'callbacks' : self.get_callbacks(run_configs=run_configs)}
         pl_trainer = Trainer(**kwargs)
+        train_data = DeviceDtypeDataset(train_data)
+
         self.optimizer = run_configs.descent.get_optimizer(params=self.parameters())
         train_data = DataLoader(train_data, batch_size=run_configs.batch_size)
-        val_data = DataLoader(val_data, batch_size=run_configs.batch_size) if val_data else None
+        # val_data = DataLoader(val_data, batch_size=run_configs.batch_size) if val_data else None
 
         err = None
         try:
@@ -89,11 +93,6 @@ class Thunder(LightningModule):
 
     def training_step(self, batch : Tensor, batch_idx):
         x, y = batch
-        dtypes_match = x.dtype == self.dtype == self.compute_configs.dtype
-        if not dtypes_match:
-            raise DatatypeError(f'Batch input dtype = \"{x.dtype}\", model dtype is \"{self.dtype}\"; '
-                             f'Compute configs dictate : \"{self.compute_configs.dtype}\"')
-
         loss = self.get_loss(predicted=self(x), target=y)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
