@@ -6,7 +6,7 @@ import torch
 from dataclasses import asdict
 from pytorch_lightning.loggers import Logger, WandbLogger
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from torch import device, dtype
 from torch.utils.data import Dataset
 from typing import Optional
@@ -39,7 +39,7 @@ class RunConfigs:
     epochs : int = 1
     batch_size : int = 32
     seed : int = 42
-    descent: Descent = Adam()
+    descent: Descent = field(default_factory=Adam)
     checkpoint_on_epoch : bool = True
     print_full_stacktrace : bool = False
     save_folderpath = os.path.expanduser(f'~/.py_thunder')
