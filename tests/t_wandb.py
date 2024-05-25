@@ -22,4 +22,7 @@ class TestWBLogging(Unittest):
 
 
 if __name__ == '__main__':
-    TestWBLogging.execute_all()
+    import wandb
+    # TestWBLogging.execute_all()
+    from thunder.module.configs import WBLogger
+    print(WBLogger.wandb_is_available())

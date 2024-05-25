@@ -93,3 +93,11 @@ class WBLogger:
     def increment_step(self):
         self.current_step += 1
 
+    @classmethod
+    def wandb_is_available(cls) -> bool:
+        if os.getenv('WANDB_API_KEY'):
+            return True
+        elif os.path.isfile(os.path.expanduser('~/.netrc')):
+            return True
+        else:
+            return False
