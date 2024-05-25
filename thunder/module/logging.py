@@ -5,7 +5,6 @@ import linecache
 import os
 from holytools.logging import make_logger
 import torch
-import wandb
 # ---------------------------------------------------------
 
 thunderLogger = make_logger()

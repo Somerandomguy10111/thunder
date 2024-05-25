@@ -11,14 +11,10 @@ from torch.utils.data import Dataset
 
 from .descent import Descent, Adam
 
-
 # ---------------------------------------------------------
 
-class ThunderConfig:
-    pass
-
 @dataclass
-class ComputeConfigs(ThunderConfig):
+class ComputeConfigs:
     num_gpus: int = torch.cuda.device_count() if torch.cuda.is_available() else 0
     dtype : dtype = torch.float32
 
@@ -98,6 +94,3 @@ class ComputeConformDataset(Dataset):
             content = content
 
         return content
-
-
-if __name__ == "__main__":

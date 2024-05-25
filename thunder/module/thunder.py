@@ -1,21 +1,17 @@
-from typing import Optional, Dict, Any
 from abc import abstractmethod
-from datetime import datetime
-import pickle
+from typing import Optional
+
 import torch
-
-from torch import Tensor, nn
-from torch.nn import Module
-from torch.optim import Optimizer
+from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
-import torch.nn
 
-from .configs import ComputeConfigs, RunConfigs, ThunderConfig, ComputeConformDataset
-from .logging import log_relevant_stacktrace, get_wb_logger, thunderLogger
+from .configs import ComputeConfigs, RunConfigs, ComputeConformDataset
+from .logging import log_relevant_stacktrace, thunderLogger
+
 
 # ---------------------------------------------------------
 
-class Thunder:
+class Thunder(torch.nn.Module):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
         self.set_compute_defaults(compute_configs)
@@ -48,11 +44,9 @@ class Thunder:
     # ---------------------------------------------------------
     # training routine
 
-    def train_on(self, train_data: Dataset,
-                       val_data: Optional[Dataset] = None,
+    def train_on(self, train_data: Dataset, val_data: Optional[Dataset] = None,
                        run_configs : RunConfigs = RunConfigs()):
         batch_size = run_configs.batch_size
-        training_device = self.compute_configs.device
         train_loader = self.get_dataloader(dataset=train_data, batch_size=batch_size)
         val_loader = self.get_dataloader(dataset=val_data, batch_size=batch_size) if val_data else None
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
@@ -75,9 +69,11 @@ class Thunder:
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
 
+
     def get_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
         compute_conform_dataset = ComputeConformDataset(dataset, self.device, self.dtype)
         return DataLoader(compute_conform_dataset, batch_size=batch_size)
+
 
     def epoch_training(self, train_loader : DataLoader, optimizer ):
         for batch in train_loader:
@@ -102,20 +98,16 @@ class Thunder:
     @classmethod
     def load(cls, fpath: str):
         checkpoint = torch.load(fpath)
-        kwargs = checkpoint['thunder_configs']
+        kwargs = checkpoint['compute_configs']
         model = cls(**kwargs)
         model.load_state_dict(checkpoint['state_dict'])
         return model
 
 
     def save(self, fpath : str):
-        thunder_configs = {}
-        for key, value in self.__dict__.items():
-            if isinstance(value, ThunderConfig):
-                thunder_configs[key] = pickle.dumps(value)
         checkpoint = {
             'state_dict': self.state_dict(),
-            'thunder_configs': thunder_configs
+            'compute_configs': self.compute_configs
         }
         torch.save(checkpoint, fpath)
 
