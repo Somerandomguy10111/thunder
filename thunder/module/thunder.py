@@ -2,19 +2,18 @@ import os.path
 from abc import abstractmethod
 from typing import Optional
 
+from holytools.logging import LoggerFactory
 import torch
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
 from .configs import ComputeConfigs, RunConfigs, ComputeConformDataset, WBLogger
-from holytools.logging import LoggerFactory
 
 thunderLogger = LoggerFactory.make_logger(name=__name__)
 # ---------------------------------------------------------
 
 
 class Thunder(torch.nn.Module):
-# class Thunder:
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
         self.set_compute_defaults(compute_configs)
@@ -48,32 +47,27 @@ class Thunder(torch.nn.Module):
     # training routine
 
     def do_training(self, train_data: Dataset, val_data: Optional[Dataset] = None,
-                    run_configs : RunConfigs = RunConfigs()):
-        batch_size = run_configs.batch_size
-        train_loader = self.get_dataloader(dataset=train_data, batch_size=batch_size)
+                          run_configs : RunConfigs = RunConfigs()):
+        train_loader = self.get_dataloader(dataset=train_data, batch_size=run_configs.batch_size)
         # val_loader = self.get_dataloader(dataset=val_data, batch_size=batch_size) if val_data else None
-        optimizer = run_configs.descent.get_optimizer(params=self.parameters())
-        max_epochs = run_configs.epochs
-        model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
         if run_configs.enable_logging:
             self.wblogger = run_configs.make_wandb_logger()
 
         err = None
         try:
             self.train()
-            for epoch in range(max_epochs):
-                self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=model)
+            train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
+            optimizer = run_configs.descent.get_optimizer(params=self.parameters())
+            for epoch in range(run_configs.epochs):
+                self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=train_model)
                 self.validate_epoch()
                 if run_configs.save_on_epoch:
                     self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
+            if run_configs.save_on_done:
+                self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
         except Exception as e:
-            err = e
-        if err:
-            print(f'Encountered exception during training routine. Aborting ...')
-            raise err
-
-        if run_configs.save_on_done:
-            self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
+            print(f'Encountered exception during training routine: {e.__repr__()}'
+                  f'Aborting ...')
 
 
     def get_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
@@ -144,7 +138,6 @@ class Thunder(torch.nn.Module):
         except StopIteration:
             param = next(self.buffers())
         return param.dtype
-
 
 
 class DatatypeError(Exception):
