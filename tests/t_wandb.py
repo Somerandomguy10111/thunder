@@ -15,6 +15,9 @@ class TestWBLogging(Unittest):
         cls.mnist_test = datasets.MNIST('/tmp/mnist', train=False, download=True, transform=transform)
 
     def test_wandb_logging(self):
+        if not WBLogger.wandb_is_available():
+            self.skipTest(reason=f'Wandb is unavailable')
+
         compute_configs = ComputeConfigs(num_gpus=0, dtype=torch.float64)
         run_configs = RunConfigs(epochs=1, enable_logging=True)
         mlp = MnistMLP(compute_configs=compute_configs)
