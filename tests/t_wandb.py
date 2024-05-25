@@ -4,6 +4,8 @@ from tests.mnist import MnistMLP
 from torchvision import datasets, transforms
 
 from thunder.module import RunConfigs, ComputeConfigs
+from thunder.module.configs import WBLogger
+
 
 # ---------------------------------------------------------
 
@@ -27,5 +29,4 @@ class TestWBLogging(Unittest):
 if __name__ == '__main__':
     import wandb
     # TestWBLogging.execute_all()
-    from thunder.module.configs import WBLogger
     print(WBLogger.wandb_is_available())
