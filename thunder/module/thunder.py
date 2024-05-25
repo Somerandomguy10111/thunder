@@ -6,7 +6,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
-from .configs import ComputeConfigs, RunConfigs, ComputeConformDataset
+from .configs import ComputeConfigs, RunConfigs, ComputeConformDataset, WBLogger
 from holytools.logging import LoggerFactory
 from wandb.wandb_run import Run
 
@@ -19,7 +19,7 @@ class Thunder(torch.nn.Module):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
         self.set_compute_defaults(compute_configs)
-        self.wblogger : Optional[Run] = None
+        self.wblogger : Optional[WBLogger] = None
         self.compute_configs : ComputeConfigs = compute_configs
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
@@ -83,21 +83,22 @@ class Thunder(torch.nn.Module):
 
 
     def epoch_training(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer):
-        for batch in train_loader:
+        for j, batch in enumerate(train_loader):
             inputs, labels = batch
             loss = self.get_loss(predicted=self(inputs), target=labels)
-            self.log_loss(loss=loss)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
 
+            self.wblogger.increment_step()
+            self.log_loss(loss=loss)
 
     def epoch_validation(self):
         pass
 
     def log_loss(self, loss):
         if not self.wblogger is None:
-            self.wblogger.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+            self.wblogger.log({'loss': loss}, step=self.wblogger.current_step)
 
 
     @abstractmethod

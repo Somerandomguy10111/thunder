@@ -21,6 +21,5 @@ class TestWBLogging(Unittest):
         mlp.do_training(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=run_configs)
 
 
-
 if __name__ == '__main__':
     TestWBLogging.execute_all()

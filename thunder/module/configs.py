@@ -67,7 +67,7 @@ class RunConfigs:
     enable_logging : bool = False
 
 
-    def make_wandb_logger(self) -> Run:
+    def make_wandb_logger(self) -> WBLogger:
         config = {
             'lr': self.descent.lr,
             'batch_size': self.batch_size,
@@ -79,4 +79,17 @@ class RunConfigs:
         }
         log_dirpath = os.path.expanduser(path='~/.wb_logs')
         wandb_run = wandb.init(project=self.project_name, config=config, dir=log_dirpath)
-        return wandb_run
+        return WBLogger(run=wandb_run)
+
+
+class WBLogger:
+    def __init__(self, run : Run):
+        self.run : Run = run
+        self.current_step : int = 0
+
+    def log(self, *args, **kwargs):
+        self.run.log(*args, **kwargs)
+
+    def increment_step(self):
+        self.current_step += 1
+
