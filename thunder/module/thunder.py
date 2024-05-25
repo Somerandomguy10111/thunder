@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
-from .configs import ComputeConfigs, RunConfigs, ComputeConformDataset, WBLogger
+from .configs import ComputeConfigs, RunConfigs, ComputeConformDataset
 from holytools.logging import LoggerFactory
 from wandb.wandb_run import Run
 
@@ -14,6 +14,7 @@ thunderLogger = LoggerFactory.make_logger(name=__name__)
 
 
 class Thunder(torch.nn.Module):
+# class Thunder:
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
         self.set_compute_defaults(compute_configs)
@@ -24,9 +25,8 @@ class Thunder(torch.nn.Module):
         print(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
 
     def set_compute_defaults(self, compute_configs : ComputeConfigs):
-        target_device = compute_configs.device
-        target_dtype = compute_configs.dtype
-        
+        target_device, target_dtype = compute_configs.device, compute_configs.dtype
+
         thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
         torch.set_default_device(device=target_device)
         thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {target_dtype}')
@@ -56,7 +56,7 @@ class Thunder(torch.nn.Module):
         max_epochs = run_configs.epochs
 
         if run_configs.enable_logging:
-            self.wblogger = WBLogger.from_runconfig(run_configs=run_configs)
+            self.wblogger = run_configs.make_wandb_logger()
 
         err = None
         try:
@@ -97,12 +97,11 @@ class Thunder(torch.nn.Module):
     def log_loss(self, loss):
         if not self.wblogger is None:
             self.wblogger.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        
+
 
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
         pass
-
 
     # ---------------------------------------------------------
     # save/load
@@ -122,6 +121,26 @@ class Thunder(torch.nn.Module):
             'compute_configs': self.compute_configs
         }
         torch.save(checkpoint, fpath)
+
+    # ---------------------------------------------------------
+    # view
+
+    @property
+    def device(self):
+        try:
+            param = next(self.parameters())
+        except StopIteration:
+            param = next(self.buffers())
+        return param.device
+
+    @property
+    def dtype(self):
+        try:
+            param = next(self.parameters())
+        except StopIteration:
+            param = next(self.buffers())
+        return param.dtype
+
 
 
 class DatatypeError(Exception):

@@ -1,13 +1,12 @@
 from __future__ import annotations
-
+from dataclasses import dataclass, field
 import os
-from dataclasses import dataclass, field, asdict
-from typing import Optional
-
-import torch
-import wandb
 from torch import device, dtype
 from torch.utils.data import Dataset
+import torch
+
+import wandb
+from wandb.wandb_run import Run
 
 from .descent import Descent, Adam
 
@@ -68,18 +67,16 @@ class RunConfigs:
     enable_logging : bool = False
 
 
-class WBLogger:
-    @classmethod
-    def from_runconfig(cls, run_configs: RunConfigs) -> WBLogger:
+    def make_wandb_logger(self) -> Run:
         config = {
-            'lr': run_configs.descent.lr,
-            'batch_size': run_configs.batch_size,
-            'optimizer': run_configs.descent.get_algorithm().__name__,
-            'epochs': run_configs.epochs,
+            'lr': self.descent.lr,
+            'batch_size': self.batch_size,
+            'optimizer': self.descent.get_algorithm().__name__,
+            'epochs': self.epochs,
             'model_architecture': 'unnamed architecture',
             'dataset': 'unnamed dataset',
             'experiment_name': 'unnamed experiment',
-            'log_dirpath': '~/.wb_logs',
         }
-        wandb_run = wandb.init(project=run_configs.project_name, config=config)
+        log_dirpath = os.path.expanduser(path='~/.wb_logs')
+        wandb_run = wandb.init(project=self.project_name, config=config, dir=log_dirpath)
         return wandb_run
