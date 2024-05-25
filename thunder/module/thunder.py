@@ -3,12 +3,11 @@ from abc import abstractmethod
 from typing import Optional
 
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
 from .configs import ComputeConfigs, RunConfigs, ComputeConformDataset, WBLogger
 from holytools.logging import LoggerFactory
-from wandb.wandb_run import Run
 
 thunderLogger = LoggerFactory.make_logger(name=__name__)
 # ---------------------------------------------------------
@@ -52,10 +51,10 @@ class Thunder(torch.nn.Module):
                     run_configs : RunConfigs = RunConfigs()):
         batch_size = run_configs.batch_size
         train_loader = self.get_dataloader(dataset=train_data, batch_size=batch_size)
-        val_loader = self.get_dataloader(dataset=val_data, batch_size=batch_size) if val_data else None
+        # val_loader = self.get_dataloader(dataset=val_data, batch_size=batch_size) if val_data else None
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
         max_epochs = run_configs.epochs
-
+        model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
         if run_configs.enable_logging:
             self.wblogger = run_configs.make_wandb_logger()
 
@@ -63,8 +62,8 @@ class Thunder(torch.nn.Module):
         try:
             self.train()
             for epoch in range(max_epochs):
-                self.epoch_training(train_loader=train_loader, optimizer=optimizer)
-                self.epoch_validation()
+                self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=model)
+                self.validate_epoch()
                 if run_configs.save_on_epoch:
                     self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
         except Exception as e:
@@ -82,10 +81,10 @@ class Thunder(torch.nn.Module):
         return DataLoader(compute_conform_dataset, batch_size=batch_size)
 
 
-    def epoch_training(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer):
+    def train_epoch(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer, model : nn.Module):
         for j, batch in enumerate(train_loader):
             inputs, labels = batch
-            loss = self.get_loss(predicted=self(inputs), target=labels)
+            loss = self.get_loss(predicted=model(inputs), target=labels)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -93,7 +92,7 @@ class Thunder(torch.nn.Module):
             self.wblogger.increment_step()
             self.log_loss(loss=loss)
 
-    def epoch_validation(self):
+    def validate_epoch(self):
         pass
 
     def log_loss(self, loss):
