@@ -28,46 +28,6 @@ class ComputeConfigs:
         return torch_device
 
 
-@dataclass
-class RunConfigs:
-    epochs : int = 1
-    batch_size : int = 32
-    descent: Descent = field(default_factory=Adam)
-    print_full_stacktrace : bool = False
-    save_folderpath = os.path.expanduser(f'~/.py_thunder')
-    save_on_done : bool = True
-    save_on_epoch : bool = True
-
-
-@dataclass
-class WBConfig:
-    lr: float
-    batch_size: int
-    optimizer: str
-    epochs: int
-    model_architecture: str = 'unnamed architecture'
-    dataset: str = 'unnamed dataset'
-    experiment_name: str = 'unnamed experiment'
-    project_name: str = 'unnamed project'
-    log_dirpath: str = '~/.wb_logs'
-    seed : Optional[int] = None
-
-    @classmethod
-    def from_runconfigs(cls, run_configs : RunConfigs, project_name : str = 'unnamed_project'):
-        return cls(lr=run_configs.descent.lr,
-                   batch_size=run_configs.batch_size,
-                   optimizer=run_configs.descent.get_algorithm().__name__,
-                   epochs=run_configs.epochs,
-                   project_name=project_name)
-
-
-    def get_logger(self):
-        kwargs = asdict(self)
-        del kwargs['project_name']
-        wandb_run = wandb.init(project=self.project_name, config=kwargs)
-        return wandb_run
-
-
 class ComputeConformDataset(Dataset):
     def __init__(self, base_dataset : Dataset, torch_device : device, torch_dtype : dtype):
         self.base_dataset : Dataset = base_dataset
@@ -94,3 +54,32 @@ class ComputeConformDataset(Dataset):
             content = content
 
         return content
+
+
+@dataclass
+class RunConfigs:
+    epochs : int = 1
+    batch_size : int = 32
+    descent: Descent = field(default_factory=Adam)
+    save_folderpath = os.path.expanduser(f'~/.py_thunder')
+    save_on_done : bool = True
+    save_on_epoch : bool = True
+    project_name : str = 'unnamed_project'
+    enable_logging : bool = False
+
+
+class WBLogger:
+    @classmethod
+    def from_runconfig(cls, run_configs: RunConfigs) -> WBLogger:
+        config = {
+            'lr': run_configs.descent.lr,
+            'batch_size': run_configs.batch_size,
+            'optimizer': run_configs.descent.get_algorithm().__name__,
+            'epochs': run_configs.epochs,
+            'model_architecture': 'unnamed architecture',
+            'dataset': 'unnamed dataset',
+            'experiment_name': 'unnamed experiment',
+            'log_dirpath': '~/.wb_logs',
+        }
+        wandb_run = wandb.init(project=run_configs.project_name, config=config)
+        return wandb_run

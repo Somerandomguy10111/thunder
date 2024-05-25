@@ -5,28 +5,31 @@ import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
-from .configs import ComputeConfigs, RunConfigs, ComputeConformDataset
-from .logging import log_relevant_stacktrace, thunderLogger
+from .configs import ComputeConfigs, RunConfigs, ComputeConformDataset, WBLogger
+from holytools.logging import LoggerFactory
+from wandb.wandb_run import Run
 
-
+thunderLogger = LoggerFactory.make_logger(name=__name__)
 # ---------------------------------------------------------
+
 
 class Thunder(torch.nn.Module):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
         self.set_compute_defaults(compute_configs)
+        self.wblogger : Optional[Run] = None
         self.compute_configs : ComputeConfigs = compute_configs
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
-        print(f'Model device, dtype = {self.device}, {self.dtype}')
+        print(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
 
     def set_compute_defaults(self, compute_configs : ComputeConfigs):
         target_device = compute_configs.device
         target_dtype = compute_configs.dtype
         
-        thunderLogger.warn(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
+        thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
         torch.set_default_device(device=target_device)
-        thunderLogger.warn(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {target_dtype}')
+        thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {target_dtype}')
         torch.set_default_dtype(d=target_dtype)
 
     @abstractmethod
@@ -52,6 +55,10 @@ class Thunder(torch.nn.Module):
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
         max_epochs = run_configs.epochs
 
+        if run_configs.enable_logging:
+            self.wblogger = WBLogger.from_runconfig(run_configs=run_configs)
+
+        err = None
         try:
             self.train()
             for epoch in range(max_epochs):
@@ -60,26 +67,25 @@ class Thunder(torch.nn.Module):
                 if run_configs.save_on_epoch:
                     self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
         except Exception as e:
-            log_relevant_stacktrace(e)
-            if run_configs.print_full_stacktrace:
-                raise e
-            else:
-                raise Exception('Encountered exception during training routine. Aborting ...')
+            err = e
+        if err:
+            print(f'Encountered exception during training routine. Aborting ...')
+            raise err
 
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
 
 
     def get_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
-        compute_conform_dataset = ComputeConformDataset(dataset, self.device, self.dtype)
+        compute_conform_dataset = ComputeConformDataset(dataset, self.compute_configs.device, self.compute_configs.dtype)
         return DataLoader(compute_conform_dataset, batch_size=batch_size)
 
 
-    def epoch_training(self, train_loader : DataLoader, optimizer ):
+    def epoch_training(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer):
         for batch in train_loader:
             inputs, labels = batch
             loss = self.get_loss(predicted=self(inputs), target=labels)
-            self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+            self.log_loss(loss=loss)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -88,9 +94,15 @@ class Thunder(torch.nn.Module):
     def epoch_validation(self):
         pass
 
+    def log_loss(self, loss):
+        if not self.wblogger is None:
+            self.wblogger.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        
+
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
         pass
+
 
     # ---------------------------------------------------------
     # save/load
