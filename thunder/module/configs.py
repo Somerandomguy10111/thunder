@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass, field, asdict
+from typing import Optional
+
 import torch
-
-from dataclasses import asdict
-from pytorch_lightning.loggers import Logger, WandbLogger
-
-from dataclasses import dataclass, field
+import wandb
 from torch import device, dtype
 from torch.utils.data import Dataset
-from typing import Optional
+
 from .descent import Descent, Adam
+
+
 # ---------------------------------------------------------
 
 class ThunderConfig:
@@ -25,9 +26,6 @@ class ComputeConfigs(ThunderConfig):
         num_devices = self.num_gpus if self.num_gpus > 0 else os.cpu_count()//2
         return num_devices
 
-    def get_accelerator(self) -> str:
-        return "gpu" if self.num_gpus > 0 else "cpu"
-
     @property
     def device(self) -> torch.device:
         torch_device = device('cuda') if self.num_gpus > 0 else torch.device('cpu')
@@ -38,12 +36,11 @@ class ComputeConfigs(ThunderConfig):
 class RunConfigs:
     epochs : int = 1
     batch_size : int = 32
-    seed : int = 42
     descent: Descent = field(default_factory=Adam)
-    checkpoint_on_epoch : bool = True
     print_full_stacktrace : bool = False
     save_folderpath = os.path.expanduser(f'~/.py_thunder')
-
+    save_on_done : bool = True
+    save_on_epoch : bool = True
 
 
 @dataclass
@@ -59,10 +56,20 @@ class WBConfig:
     log_dirpath: str = '~/.wb_logs'
     seed : Optional[int] = None
 
-    def get_logger(self) -> Logger:
-        wb_configs = asdict(self)
-        return WandbLogger(save_dir=os.path.expanduser(self.log_dirpath), config=wb_configs)
+    @classmethod
+    def from_runconfigs(cls, run_configs : RunConfigs, project_name : str = 'unnamed_project'):
+        return cls(lr=run_configs.descent.lr,
+                   batch_size=run_configs.batch_size,
+                   optimizer=run_configs.descent.get_algorithm().__name__,
+                   epochs=run_configs.epochs,
+                   project_name=project_name)
 
+
+    def get_logger(self):
+        kwargs = asdict(self)
+        del kwargs['project_name']
+        wandb_run = wandb.init(project=self.project_name, config=kwargs)
+        return wandb_run
 
 
 class ComputeConformDataset(Dataset):
@@ -91,3 +98,6 @@ class ComputeConformDataset(Dataset):
             content = content
 
         return content
+
+
+if __name__ == "__main__":

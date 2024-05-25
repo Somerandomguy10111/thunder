@@ -4,24 +4,22 @@ from datetime import datetime
 import pickle
 import torch
 
-from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.callbacks import Callback, ModelCheckpoint
-from torch import Tensor
+from torch import Tensor, nn
+from torch.nn import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader, Dataset
+import torch.nn
 
 from .configs import ComputeConfigs, RunConfigs, ThunderConfig, ComputeConformDataset
 from .logging import log_relevant_stacktrace, get_wb_logger, thunderLogger
 
 # ---------------------------------------------------------
 
-class Thunder(LightningModule):
+class Thunder:
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
         self.set_compute_defaults(compute_configs)
         self.compute_configs : ComputeConfigs = compute_configs
-        self.optimizer : Optional[Optimizer] = None
-        self.trainer : Optional[Trainer] = None
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
         print(f'Model device, dtype = {self.device}, {self.dtype}')
@@ -54,51 +52,45 @@ class Thunder(LightningModule):
                        val_data: Optional[Dataset] = None,
                        run_configs : RunConfigs = RunConfigs()):
         batch_size = run_configs.batch_size
-        kwargs = {'accelerator' : self.compute_configs.get_accelerator(),
-                  'logger' : get_wb_logger(run_configs=run_configs),
-                  'devices' : self.compute_configs.get_num_devices(),
-                  'max_epochs' : run_configs.epochs,
-                  'callbacks' : self.get_callbacks(run_configs=run_configs)}
-        pl_trainer = Trainer(**kwargs)
-        train_data = self.get_dataloader(dataset=train_data, batch_size=batch_size)
-        val_data = self.get_dataloader(dataset=val_data, batch_size=batch_size) if val_data else None
-        self.optimizer = run_configs.descent.get_optimizer(params=self.parameters())
+        training_device = self.compute_configs.device
+        train_loader = self.get_dataloader(dataset=train_data, batch_size=batch_size)
+        val_loader = self.get_dataloader(dataset=val_data, batch_size=batch_size) if val_data else None
+        optimizer = run_configs.descent.get_optimizer(params=self.parameters())
+        max_epochs = run_configs.epochs
 
-        err = None
         try:
-            pl_trainer.fit(model=self, train_dataloaders=train_data, val_dataloaders=val_data)
+            self.train()
+            for epoch in range(max_epochs):
+                self.epoch_training(train_loader=train_loader, optimizer=optimizer)
+                self.epoch_validation()
+                if run_configs.save_on_epoch:
+                    self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
         except Exception as e:
             log_relevant_stacktrace(e)
-            err = e
+            if run_configs.print_full_stacktrace:
+                raise e
+            else:
+                raise Exception('Encountered exception during training routine. Aborting ...')
 
-        if err:
-            err = err if run_configs.print_full_stacktrace else Exception('Encountered excpetion during training routine. Aborting ...')
-            raise err
+        if run_configs.save_on_done:
+            self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
 
     def get_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
         compute_conform_dataset = ComputeConformDataset(dataset, self.device, self.dtype)
         return DataLoader(compute_conform_dataset, batch_size=batch_size)
 
-    def get_callbacks(self, run_configs : RunConfigs) -> list[Callback]:
-        callbacks = []
-        if run_configs.checkpoint_on_epoch:
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            kwargs = {'dirpath' : run_configs.save_folderpath, 'filename' : f'{self.get_name()}_{timestamp}'}
-            checkpoint_callback = ModelCheckpoint(**kwargs,save_top_k=1, every_n_epochs=1)
-            callbacks.append(checkpoint_callback)
-        return callbacks
+    def epoch_training(self, train_loader : DataLoader, optimizer ):
+        for batch in train_loader:
+            inputs, labels = batch
+            loss = self.get_loss(predicted=self(inputs), target=labels)
+            self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
 
 
-    def training_step(self, batch : Tensor, batch_idx):
-        x, y = batch
-        loss = self.get_loss(predicted=self(x), target=y)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        return loss
-
-    def configure_optimizers(self) -> Optimizer:
-        if self.optimizer is None:
-            raise ValueError('Optimizer not set. Cannot configure optimizer for trainer fit routine')
-        return self.optimizer
+    def epoch_validation(self):
+        pass
 
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
@@ -109,30 +101,23 @@ class Thunder(LightningModule):
 
     @classmethod
     def load(cls, fpath: str):
-        thunder = cls.load_from_checkpoint(fpath)
-        return thunder
+        checkpoint = torch.load(fpath)
+        kwargs = checkpoint['thunder_configs']
+        model = cls(**kwargs)
+        model.load_state_dict(checkpoint['state_dict'])
+        return model
+
 
     def save(self, fpath : str):
-        if self.trainer is None:
-            raise ValueError('Trainer is None. Pytorch lightning can only be saved after running trainer.fit(...) on model. Aborting ...')
-        if self.trainer.model is None:
-            raise ValueError('Trainer model is None. Pytorch lightning can only be saved after running trainer.fit(...) on model. Aborting ...')
-        self.trainer.save_checkpoint(filepath=fpath)
-
-
-    def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
-        for key, value in checkpoint['thunder_configs'].items():
-            value = pickle.loads(value)
-            self.__setattr__(name=key, value=value)
-        self.set_compute_defaults(self.compute_configs)
-
-    def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         thunder_configs = {}
         for key, value in self.__dict__.items():
-            if isinstance(value,ThunderConfig):
+            if isinstance(value, ThunderConfig):
                 thunder_configs[key] = pickle.dumps(value)
-        checkpoint['thunder_configs'] = thunder_configs
-
+        checkpoint = {
+            'state_dict': self.state_dict(),
+            'thunder_configs': thunder_configs
+        }
+        torch.save(checkpoint, fpath)
 
 
 class DatatypeError(Exception):
