@@ -24,13 +24,13 @@ class TestComputeConfigs(Unittest):
 
     def test_default_training(self):
         mlp = MnistMLP()
-        mlp.train_on(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=self.run_configs)
+        mlp.do_training(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=self.run_configs)
 
 
     def test_non_default_training(self):
         compute_configs = ComputeConfigs(num_gpus=0, dtype=torch.float64)
         mlp = MnistMLP(compute_configs=compute_configs)
-        mlp.train_on(train_data=self.mnist_train,run_configs=self.run_configs)
+        mlp.do_training(train_data=self.mnist_train, run_configs=self.run_configs)
 
 
 if __name__ == '__main__':

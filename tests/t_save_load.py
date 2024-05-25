@@ -19,7 +19,7 @@ class TestThunderSaveLoad(Unittest):
         fpath = f'/tmp/py_thunder_/test_{uuid.uuid4()}.ckpt'
         empty_dataloader = EmptyDataset()
         original = MnistMLP()
-        original.train_on(train_data=empty_dataloader)
+        original.do_training(train_data=empty_dataloader)
         original.save(fpath)
 
         new = MnistMLP.load(fpath=fpath)

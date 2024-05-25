@@ -1,3 +1,4 @@
+import os.path
 from abc import abstractmethod
 from typing import Optional
 
@@ -47,8 +48,8 @@ class Thunder(torch.nn.Module):
     # ---------------------------------------------------------
     # training routine
 
-    def train_on(self, train_data: Dataset, val_data: Optional[Dataset] = None,
-                       run_configs : RunConfigs = RunConfigs()):
+    def do_training(self, train_data: Dataset, val_data: Optional[Dataset] = None,
+                    run_configs : RunConfigs = RunConfigs()):
         batch_size = run_configs.batch_size
         train_loader = self.get_dataloader(dataset=train_data, batch_size=batch_size)
         val_loader = self.get_dataloader(dataset=val_data, batch_size=batch_size) if val_data else None
@@ -109,13 +110,16 @@ class Thunder(torch.nn.Module):
     @classmethod
     def load(cls, fpath: str):
         checkpoint = torch.load(fpath)
-        kwargs = checkpoint['compute_configs']
-        model = cls(**kwargs)
+        model = cls(compute_configs=checkpoint['compute_configs'])
         model.load_state_dict(checkpoint['state_dict'])
         return model
 
 
     def save(self, fpath : str):
+        save_fpath = os.path.abspath(os.path.relpath(fpath))
+        save_dirpath = os.path.dirname(save_fpath)
+        os.makedirs(save_dirpath, exist_ok=True)
+
         checkpoint = {
             'state_dict': self.state_dict(),
             'compute_configs': self.compute_configs
