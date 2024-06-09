@@ -54,20 +54,16 @@ class Thunder(torch.nn.Module):
             self.wblogger = run_configs.make_wandb_logger()
 
         err = None
-        try:
-            self.train()
-            train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
-            optimizer = run_configs.descent.get_optimizer(params=self.parameters())
-            for epoch in range(run_configs.epochs):
-                self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=train_model)
-                self.validate_epoch()
-                if run_configs.save_on_epoch:
-                    self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
-            if run_configs.save_on_done:
-                self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
-        except Exception as e:
-            print(f'Encountered exception during training routine: {e.__repr__()}'
-                  f'Aborting ...')
+        self.train()
+        train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
+        optimizer = run_configs.descent.get_optimizer(params=self.parameters())
+        for epoch in range(run_configs.epochs):
+            self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=train_model)
+            self.validate_epoch()
+            if run_configs.save_on_epoch:
+                self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
+        if run_configs.save_on_done:
+            self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
 
 
     def get_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
