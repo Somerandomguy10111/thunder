@@ -55,6 +55,8 @@ class Thunder(torch.nn.Module):
         if val_data:
             val_data = self.mk_thunder_dataset(dataset=val_data)
             val_loader = self.get_dataloader(dataset=val_data, batch_size=run_configs.batch_size)
+        else:
+            val_loader = None
         if run_configs.enable_logging:
             self.wblogger = run_configs.make_wandb_logger()
 
@@ -63,7 +65,8 @@ class Thunder(torch.nn.Module):
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
         for epoch in range(run_configs.epochs):
             self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=train_model)
-            self.validate_epoch()
+            if val_loader:
+                self.validate_epoch(val_loader=val_loader)
             if run_configs.save_on_epoch:
                 self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
         if run_configs.save_on_done:
@@ -86,14 +89,17 @@ class Thunder(torch.nn.Module):
 
             if not self.wblogger is None:
                 self.wblogger.increment_step()
-            self.log_loss(loss=loss.item())
+            self.log_metric(name='loss',value=loss.item())
 
-    def validate_epoch(self):
-        pass
+    def validate_epoch(self, val_loader : DataLoader):
+        for batch in val_loader:
+            inputs, labels = batch
+            loss = self.get_loss(predicted=self(inputs), target=labels)
+            self.log_metric(name='Validation loss', value=loss.item())
 
-    def log_loss(self, loss: float):
+    def log_metric(self, name : str, value: float):
         if not self.wblogger is None:
-            self.wblogger.log({'loss': loss}, step=self.wblogger.current_step)
+            self.wblogger.log({name : value}, step=self.wblogger.current_step)
 
 
     @abstractmethod
