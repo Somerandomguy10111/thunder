@@ -43,6 +43,10 @@ class Thunder(torch.nn.Module):
     def get_name(cls) -> str:
         return cls.__name__
 
+    @classmethod
+    def dataloader(cls, dataset : Dataset, batch_size : int) -> DataLoader:
+        return DataLoader(dataset, batch_size=batch_size)
+
     # ---------------------------------------------------------
     # training routine
 
@@ -68,7 +72,7 @@ class Thunder(torch.nn.Module):
 
     def get_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
         compute_conform_dataset = ComputeConformDataset(dataset, self.compute_configs.device, self.compute_configs.dtype)
-        return DataLoader(compute_conform_dataset, batch_size=batch_size)
+        return self.dataloader(compute_conform_dataset, batch_size=batch_size)
 
 
     def train_epoch(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer, model : nn.Module):
@@ -79,7 +83,8 @@ class Thunder(torch.nn.Module):
             optimizer.step()
             optimizer.zero_grad()
 
-            self.wblogger.increment_step()
+            if not self.wblogger is None:
+                self.wblogger.increment_step()
             self.log_loss(loss=loss)
 
     def validate_epoch(self):
