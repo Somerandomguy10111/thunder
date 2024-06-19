@@ -86,12 +86,12 @@ class Thunder(torch.nn.Module):
 
             if not self.wblogger is None:
                 self.wblogger.increment_step()
-            self.log_loss(loss=loss)
+            self.log_loss(loss=loss.item())
 
     def validate_epoch(self):
         pass
 
-    def log_loss(self, loss):
+    def log_loss(self, loss: float):
         if not self.wblogger is None:
             self.wblogger.log({'loss': loss}, step=self.wblogger.current_step)
 
