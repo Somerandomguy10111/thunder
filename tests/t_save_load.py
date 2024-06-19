@@ -6,7 +6,6 @@ from torch.utils.data import Dataset
 # ---------------------------------------------------------
 
 class TestThunderSaveLoad(Unittest):
-
     def test_thunder_model_round_trip(self):
         class EmptyDataset(Dataset):
             def __len__(self):
@@ -17,9 +16,7 @@ class TestThunderSaveLoad(Unittest):
 
 
         fpath = f'/tmp/py_thunder_/test_{uuid.uuid4()}.ckpt'
-        empty_dataloader = EmptyDataset()
         original = MnistMLP()
-        original.do_training(train_data=empty_dataloader)
         original.save(fpath)
 
         new = MnistMLP.load(fpath=fpath)
