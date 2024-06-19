@@ -27,6 +27,5 @@ class TestWBLogging(Unittest):
 
 
 if __name__ == '__main__':
-    import wandb
     # TestWBLogging.execute_all()
     print(WBLogger.wandb_is_available())

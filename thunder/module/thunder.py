@@ -7,7 +7,7 @@ import torch
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
-from .configs import ComputeConfigs, RunConfigs, ComputeConformDataset, WBLogger
+from .configs import ComputeConfigs, RunConfigs, ThunderDataset, WBLogger
 
 thunderLogger = LoggerFactory.make_logger(name=__name__)
 # ---------------------------------------------------------
@@ -43,21 +43,21 @@ class Thunder(torch.nn.Module):
     def get_name(cls) -> str:
         return cls.__name__
 
-    @classmethod
-    def dataloader(cls, dataset : Dataset, batch_size : int) -> DataLoader:
-        return DataLoader(dataset, batch_size=batch_size)
-
     # ---------------------------------------------------------
     # training routine
 
-    def do_training(self, train_data: Dataset, val_data: Optional[Dataset] = None,
+    def do_training(self, train_data: Dataset,
+                          val_data: Optional[Dataset] = None,
                           run_configs : RunConfigs = RunConfigs()):
+        train_data = self.mk_thunder_dataset(dataset=train_data)
         train_loader = self.get_dataloader(dataset=train_data, batch_size=run_configs.batch_size)
-        # val_loader = self.get_dataloader(dataset=val_data, batch_size=batch_size) if val_data else None
+
+        if val_data:
+            val_data = self.mk_thunder_dataset(dataset=val_data)
+            val_loader = self.get_dataloader(dataset=val_data, batch_size=run_configs.batch_size)
         if run_configs.enable_logging:
             self.wblogger = run_configs.make_wandb_logger()
 
-        err = None
         self.train()
         train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
@@ -69,11 +69,12 @@ class Thunder(torch.nn.Module):
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
 
+    def mk_thunder_dataset(self, dataset : Dataset) -> Dataset:
+        return ThunderDataset(base_dataset=dataset, torch_device=self.compute_configs.device, torch_dtype=self.compute_configs.dtype)
 
     def get_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
-        compute_conform_dataset = ComputeConformDataset(dataset, self.compute_configs.device, self.compute_configs.dtype)
-        return self.dataloader(compute_conform_dataset, batch_size=batch_size)
-
+        rng = torch.Generator(device=str(self.device))
+        return DataLoader(dataset, batch_size=batch_size, shuffle=True, generator=rng)
 
     def train_epoch(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer, model : nn.Module):
         for j, batch in enumerate(train_loader):
