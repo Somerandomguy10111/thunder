@@ -49,12 +49,13 @@ class Thunder(torch.nn.Module):
     def do_training(self, train_data: Dataset,
                           val_data: Optional[Dataset] = None,
                           run_configs : RunConfigs = RunConfigs()):
-        train_data = self.mk_thunder_dataset(dataset=train_data)
-        train_loader = self.get_dataloader(dataset=train_data, batch_size=run_configs.batch_size)
+        to_thunder_dataset = lambda dataset : ThunderDataset(dataset=dataset, torch_device=self.compute_configs.device, torch_dtype=self.compute_configs.dtype)
+        train_data = to_thunder_dataset(dataset=train_data)
+        train_loader = self.make_dataloader(dataset=train_data, batch_size=run_configs.batch_size)
 
         if val_data:
-            val_data = self.mk_thunder_dataset(dataset=val_data)
-            val_loader = self.get_dataloader(dataset=val_data, batch_size=run_configs.batch_size)
+            val_data = to_thunder_dataset(dataset=val_data)
+            val_loader = self.make_dataloader(dataset=val_data, batch_size=run_configs.batch_size)
         else:
             val_loader = None
         if run_configs.enable_logging:
@@ -72,14 +73,15 @@ class Thunder(torch.nn.Module):
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
 
-    def mk_thunder_dataset(self, dataset : Dataset) -> Dataset:
-        return ThunderDataset(base_dataset=dataset, torch_device=self.compute_configs.device, torch_dtype=self.compute_configs.dtype)
-
-    def get_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
+    def make_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
         rng = torch.Generator(device=str(self.device))
         return DataLoader(dataset, batch_size=batch_size, shuffle=True, generator=rng)
 
+    # ---------------------------------------------------------
+    # optimization
+
     def train_epoch(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer, model : nn.Module):
+        training_loss = 0
         for j, batch in enumerate(train_loader):
             inputs, labels = batch
             loss = self.get_loss(predicted=model(inputs), target=labels)
@@ -87,24 +89,24 @@ class Thunder(torch.nn.Module):
             optimizer.step()
             optimizer.zero_grad()
 
-            if not self.wblogger is None:
-                self.wblogger.increment_step()
-            self.log_metric(name='loss',value=loss.item())
+            training_loss += loss.item()
+
+        if not self.wblogger is None:
+            self.wblogger.increment_step()
+        self.log_metric(name='Training loss epoch',value=training_loss)
 
     def validate_epoch(self, val_loader : DataLoader):
+        val_loss = 0
         for batch in val_loader:
             inputs, labels = batch
             loss = self.get_loss(predicted=self(inputs), target=labels)
-            self.log_metric(name='Validation loss', value=loss.item())
-
-    def log_metric(self, name : str, value: float):
-        if not self.wblogger is None:
-            self.wblogger.log({name : value}, step=self.wblogger.current_step)
-
+            val_loss += loss.item()
+        self.log_metric(name='Validation loss', value=val_loss)
 
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
         pass
+
 
     # ---------------------------------------------------------
     # save/load
@@ -130,6 +132,10 @@ class Thunder(torch.nn.Module):
 
     # ---------------------------------------------------------
     # view
+
+    def log_metric(self, name : str, value: float):
+        if not self.wblogger is None:
+            self.wblogger.log({name : value}, step=self.wblogger.current_step)
 
     @property
     def device(self):

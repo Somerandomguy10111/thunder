@@ -28,8 +28,8 @@ class ComputeConfigs:
 
 
 class ThunderDataset(Dataset):
-    def __init__(self, base_dataset : Dataset, torch_device : device, torch_dtype : dtype):
-        self.base_dataset : Dataset = base_dataset
+    def __init__(self, dataset : Dataset, torch_device : device, torch_dtype : dtype):
+        self.base_dataset : Dataset = dataset
         self.device : device = torch_device
         self.dtype : dtype = torch_dtype
 
