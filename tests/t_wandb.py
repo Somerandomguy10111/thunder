@@ -6,14 +6,16 @@ from torchvision import datasets, transforms
 from thunder.module import RunConfigs, ComputeConfigs
 from thunder.module.configs import WBLogger
 
+# from torch.utils.data import random_split
+
 # ---------------------------------------------------------
 
 class TestWBLogging(Unittest):
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
-        cls.mnist_train = datasets.MNIST('/tmp/mnist', train=True, download=True, transform=transform)
-        cls.mnist_test = datasets.MNIST('/tmp/mnist', train=False, download=True, transform=transform)
+        self.mnist_train = datasets.MNIST('/tmp/mnist', train=True, download=True, transform=transform)
+        self.mnist_test = datasets.MNIST('/tmp/mnist', train=False, download=True, transform=transform)
+
 
     def test_wandb_logging(self):
         if not WBLogger.wandb_is_available():
