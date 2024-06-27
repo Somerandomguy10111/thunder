@@ -6,7 +6,6 @@ from torchvision import datasets, transforms
 from thunder.module import RunConfigs, ComputeConfigs
 from thunder.module.configs import WBLogger
 
-
 # ---------------------------------------------------------
 
 class TestWBLogging(Unittest):
@@ -27,5 +26,4 @@ class TestWBLogging(Unittest):
 
 
 if __name__ == '__main__':
-    # TestWBLogging.execute_all()
-    print(WBLogger.wandb_is_available())
+    TestWBLogging.execute_all()

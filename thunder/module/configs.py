@@ -76,6 +76,7 @@ class RunConfigs:
             'model_architecture': 'unnamed architecture',
             'dataset': 'unnamed dataset',
             'experiment_name': 'unnamed experiment',
+            'step_metric' : 'epoch'
         }
         log_dirpath = os.path.expanduser(path='~/.wb_logs')
         wandb_run = wandb.init(project=self.project_name, config=config, dir=log_dirpath)
