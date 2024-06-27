@@ -86,13 +86,19 @@ class RunConfigs:
 class WBLogger:
     def __init__(self, run : Run):
         self.run : Run = run
-        self.current_step : int = 0
+        self.current_batch : int = 0
+        self.current_epoch : int = 0
 
-    def log(self, *args, **kwargs):
-        self.run.log(*args, **kwargs)
+    def log(self, metric_dict : dict[str, int | float]):
+        metric_dict['epoch'] = self.current_epoch
+        metric_dict['batch'] = self.current_batch
+        self.run.log(data=metric_dict)
 
-    def increment_step(self):
-        self.current_step += 1
+    def increment_epoch(self):
+        self.current_epoch += 1
+
+    def increment_batch(self):
+        self.current_batch += 1
 
     @classmethod
     def wandb_is_available(cls) -> bool:

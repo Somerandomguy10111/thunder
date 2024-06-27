@@ -49,7 +49,9 @@ class Thunder(torch.nn.Module):
     def do_training(self, train_data: Dataset,
                           val_data: Optional[Dataset] = None,
                           run_configs : RunConfigs = RunConfigs()):
-        to_thunder_dataset = lambda dataset : ThunderDataset(dataset=dataset, torch_device=self.compute_configs.device, torch_dtype=self.compute_configs.dtype)
+        to_thunder_dataset = lambda dataset : ThunderDataset(dataset=dataset,
+                                                             torch_device=self.compute_configs.device,
+                                                             torch_dtype=self.compute_configs.dtype)
         train_data = to_thunder_dataset(dataset=train_data)
         train_loader = self.make_dataloader(dataset=train_data, batch_size=run_configs.batch_size)
 
@@ -89,19 +91,23 @@ class Thunder(torch.nn.Module):
             optimizer.step()
             optimizer.zero_grad()
 
-            training_loss += loss.item()
+            batch_loss = loss.item()
+            training_loss += batch_loss
+            self.wblogger.increment_batch()
 
         if not self.wblogger is None:
-            self.wblogger.increment_step()
-        self.log_metric(name='Training loss epoch',value=training_loss)
+            self.wblogger.increment_epoch()
+        self.log_metric(name='Training/Loss',value=training_loss)
 
     def validate_epoch(self, val_loader : DataLoader):
         val_loss = 0
         for batch in val_loader:
             inputs, labels = batch
             loss = self.get_loss(predicted=self(inputs), target=labels)
-            val_loss += loss.item()
-        self.log_metric(name='Validation loss', value=val_loss)
+            batch_loss = loss.item()
+            val_loss += batch_loss
+
+        self.log_metric(name='Validation/Loss', value=val_loss)
 
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
@@ -135,7 +141,7 @@ class Thunder(torch.nn.Module):
 
     def log_metric(self, name : str, value: float):
         if not self.wblogger is None:
-            self.wblogger.log({name : value}, step=self.wblogger.current_step)
+            self.wblogger.log(metric_dict={name : value})
 
     @property
     def device(self):
