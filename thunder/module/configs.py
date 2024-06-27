@@ -89,16 +89,31 @@ class WBLogger:
         self.current_batch : int = 0
         self.current_epoch : int = 0
 
-    def log(self, metric_dict : dict[str, int | float]):
-        metric_dict['epoch'] = self.current_epoch
-        metric_dict['batch'] = self.current_batch
-        self.run.log(data=metric_dict)
+    # ---------------------------------------------------------
+    # increment
 
     def increment_epoch(self):
         self.current_epoch += 1
 
     def increment_batch(self):
         self.current_batch += 1
+
+    # ---------------------------------------------------------
+    # logging
+
+    def log_metric(self, name: str, value: float):
+        self.log(metric_dict={name: value})
+
+    def log_training_metric(self, name: str, value: float):
+        self.log_metric(name=f'Training/{name}', value=value)
+
+    def log_validation_metric(self, name: str, value: float):
+        self.log_metric(name=f'Validation/{name}', value=value)
+
+    def log(self, metric_dict: dict[str, int | float]):
+        metric_dict['epoch'] = self.current_epoch
+        metric_dict['batch'] = self.current_batch
+        self.run.log(data=metric_dict)
 
     @classmethod
     def wandb_is_available(cls) -> bool:

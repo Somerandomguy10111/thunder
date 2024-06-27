@@ -16,7 +16,7 @@ class TestWBLogging(Unittest):
         mnist_train_full = datasets.MNIST('/tmp/mnist', train=True, download=True, transform=transform)
         mnist_test_full = datasets.MNIST('/tmp/mnist', train=False, download=True, transform=transform)
 
-        fraction = 20
+        fraction = 40
         train_target_length = len(mnist_train_full) // fraction
         test_target_length = len(mnist_test_full) // fraction
         self.mnist_train, _ = torch.utils.data.random_split(mnist_train_full, [train_target_length, len(mnist_train_full) - train_target_length])

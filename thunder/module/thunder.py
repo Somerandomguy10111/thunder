@@ -39,10 +39,6 @@ class Thunder(torch.nn.Module):
     def forward(self, x):
         pass
 
-    @classmethod
-    def get_name(cls) -> str:
-        return cls.__name__
-
     # ---------------------------------------------------------
     # training routine
 
@@ -75,6 +71,7 @@ class Thunder(torch.nn.Module):
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
 
+
     def make_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
         rng = torch.Generator(device=str(self.device))
         return DataLoader(dataset, batch_size=batch_size, shuffle=True, generator=rng)
@@ -91,28 +88,28 @@ class Thunder(torch.nn.Module):
             optimizer.step()
             optimizer.zero_grad()
 
-            batch_loss = loss.item()
-            training_loss += batch_loss
+            training_loss += loss.item()
             self.wblogger.increment_batch()
 
         if not self.wblogger is None:
             self.wblogger.increment_epoch()
-        self.log_metric(name='Training/Loss',value=training_loss)
+            self.wblogger.log_training_metric(name='Loss',value=training_loss)
+
 
     def validate_epoch(self, val_loader : DataLoader):
         val_loss = 0
         for batch in val_loader:
             inputs, labels = batch
             loss = self.get_loss(predicted=self(inputs), target=labels)
-            batch_loss = loss.item()
-            val_loss += batch_loss
+            val_loss += loss.item()
 
-        self.log_metric(name='Validation/Loss', value=val_loss)
+        if not self.wblogger is None:
+            self.wblogger.log_validation_metric(name='Loss', value=val_loss)
+
 
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
         pass
-
 
     # ---------------------------------------------------------
     # save/load
@@ -137,11 +134,11 @@ class Thunder(torch.nn.Module):
         torch.save(checkpoint, fpath)
 
     # ---------------------------------------------------------
-    # view
+    # properties
 
-    def log_metric(self, name : str, value: float):
-        if not self.wblogger is None:
-            self.wblogger.log(metric_dict={name : value})
+    @classmethod
+    def get_name(cls) -> str:
+        return cls.__name__
 
     @property
     def device(self):
@@ -158,7 +155,6 @@ class Thunder(torch.nn.Module):
         except StopIteration:
             param = next(self.buffers())
         return param.dtype
-
 
 class DatatypeError(Exception):
     pass
