@@ -3,6 +3,7 @@ from abc import abstractmethod
 from typing import Optional, Callable
 
 import torch
+from tabulate import tabulate
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
@@ -72,10 +73,13 @@ class Thunder(ComputeConfigurable):
             optimizer.step()
             optimizer.zero_grad()
 
-            self.wblogger.increment_batch()
+            if not self.wblogger is None:
+                self.wblogger.increment_batch()
+                self.wblogger.log_quantity(name='batch', value=self.wblogger.current_batch)
 
         if not self.wblogger is None:
             self.wblogger.increment_epoch()
+            self.wblogger.log_quantity(name='epoch', value=self.wblogger.current_epoch)
             self.log_metrics(is_training=True)
 
 
@@ -118,13 +122,17 @@ class Thunder(ComputeConfigurable):
     # logging
 
     def log_metrics(self, is_training : bool):
+        table_data = []
         for k,v in self.function_logs.items():
             if is_training:
                 self.wblogger.log_training_quantity(name=k, value=v.value)
             else:
                 self.wblogger.log_validation_quantity(name=k, value=v.value)
+            table_data.append([k, v.value])
         self.function_logs = {}
-
+        table = tabulate(table_data, headers=['Metric', 'Value'], tablefmt='psql')
+        print(f'Epoch {self.wblogger.current_epoch} {"Training" if is_training else "Validation"} metrics:')
+        print(table)
 
     @staticmethod
     def add_metric(mthd : Callable, name_override : Optional[str] = None, log_average : bool = False):
@@ -134,8 +142,6 @@ class Thunder(ComputeConfigurable):
             result = mthd(self, *args, **kwargs)
             if not isinstance(result, Tensor):
                 raise ValueError(f'Metric {mthd.__name__} did not return a tensor')
-            if not result.dim() == 0:
-                raise ValueError(f'Metric {mthd.__name__} did not return a scalar tensor')
 
             if not mthd.__name__ in self.function_logs:
                 self.function_logs[metric_name] = Metric(name=metric_name, log_average=log_average)
