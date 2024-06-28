@@ -7,33 +7,21 @@ from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
 from holytools.logging import LoggerFactory
-from thunder.logging.wblogger import WBLogger
-from ..configs.compute import ThunderDataset
-from .. import RunConfigs, ComputeConfigs
-from thunder.logging.metric import Metric
+from thunder.logging import Metric, WBLogger
+from thunder.configs import RunConfigs, ComputeConfigs
+from .compute_configurable import ComputeConfigurable, ThunderDataset
 
 thunderLogger = LoggerFactory.make_logger(name=__name__)
 # ---------------------------------------------------------
 
-
-class Thunder(torch.nn.Module):
+class Thunder(ComputeConfigurable):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
-        super().__init__()
-        self.set_compute_defaults(compute_configs)
+        super().__init__(compute_configs=compute_configs)
         self.wblogger : Optional[WBLogger] = None
-        self.compute_configs : ComputeConfigs = compute_configs
         self.function_logs : dict[str, Metric] = {}
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
         print(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
-
-    def set_compute_defaults(self, compute_configs : ComputeConfigs):
-        target_device, target_dtype = compute_configs.device, compute_configs.dtype
-
-        thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
-        torch.set_default_device(device=target_device)
-        thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {target_dtype}')
-        torch.set_default_dtype(d=target_dtype)
 
     @abstractmethod
     def __set__model__(self):
@@ -50,8 +38,8 @@ class Thunder(torch.nn.Module):
                           val_data: Optional[Dataset] = None,
                           run_configs : RunConfigs = RunConfigs()):
         to_thunder_dataset = lambda dataset : ThunderDataset(dataset=dataset,
-                                                             torch_device=self.compute_configs.device,
-                                                             torch_dtype=self.compute_configs.dtype)
+                                                             device=self.compute_configs.device,
+                                                             dtype=self.compute_configs.dtype)
         train_data = to_thunder_dataset(dataset=train_data)
         train_loader = self.make_dataloader(dataset=train_data, batch_size=run_configs.batch_size)
 
@@ -75,10 +63,6 @@ class Thunder(torch.nn.Module):
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
 
-
-    def make_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
-        rng = torch.Generator(device=str(self.device))
-        return DataLoader(dataset, batch_size=batch_size, shuffle=True, generator=rng)
 
     # ---------------------------------------------------------
     # optimization
@@ -157,31 +141,3 @@ class Thunder(torch.nn.Module):
             return result
 
         return logged_mthd
-
-    # ---------------------------------------------------------
-    # properties
-
-    @classmethod
-    def get_name(cls) -> str:
-        return cls.__name__
-
-    @property
-    def device(self):
-        try:
-            param = next(self.parameters())
-        except StopIteration:
-            param = next(self.buffers())
-        return param.device
-
-    @property
-    def dtype(self):
-        try:
-            param = next(self.parameters())
-        except StopIteration:
-            param = next(self.buffers())
-        return param.dtype
-
-
-
-class DatatypeError(Exception):
-    pass

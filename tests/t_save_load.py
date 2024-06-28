@@ -1,19 +1,11 @@
 import uuid
 from holytools.devtools import Unittest
 from tests.mnist import MnistMLP
-from torch.utils.data import Dataset
 
 # ---------------------------------------------------------
 
 class TestThunderSaveLoad(Unittest):
     def test_thunder_model_round_trip(self):
-        class EmptyDataset(Dataset):
-            def __len__(self):
-                return 0  # No data
-
-            def __getitem__(self, idx):
-                raise IndexError("Empty dataset")
-
 
         fpath = f'/tmp/py_thunder_/test_{uuid.uuid4()}.ckpt'
         original = MnistMLP()

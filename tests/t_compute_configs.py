@@ -3,7 +3,7 @@ from holytools.devtools import Unittest
 from tests.mnist import MnistMLP
 from torchvision import datasets, transforms
 
-from thunder import RunConfigs, ComputeConfigs
+from thunder.configs import RunConfigs, ComputeConfigs
 
 
 # ---------------------------------------------------------

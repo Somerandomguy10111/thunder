@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import torch
 from torch import dtype, device
-from torch.utils.data import Dataset
+
 
 # ---------------------------------------------------------
 
@@ -24,29 +24,3 @@ class ComputeConfigs:
         return torch_device
 
 
-class ThunderDataset(Dataset):
-    def __init__(self, dataset : Dataset, torch_device : device, torch_dtype : dtype):
-        self.base_dataset : Dataset = dataset
-        self.device : device = torch_device
-        self.dtype : dtype = torch_dtype
-
-    # noinspection PyTypeChecker
-    def __len__(self):
-        return len(self.base_dataset)
-
-
-    def __getitem__(self, idx):
-        content = self.base_dataset[idx]
-        if isinstance(content, tuple):
-            data, label = content
-            if isinstance(data, torch.Tensor):
-                data = data.to(dtype=self.dtype, device=self.device)
-            if isinstance(label, torch.Tensor):
-                label = label.to(dtype=self.dtype, device=self.device)
-            return data, label
-        elif isinstance(content, torch.Tensor):
-            content = content.to(dtype=self.dtype, device=self.device)
-        else:
-            content = content
-
-        return content
