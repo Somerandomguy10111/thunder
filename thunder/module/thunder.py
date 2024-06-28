@@ -132,6 +132,11 @@ class Thunder(ComputeConfigurable):
 
         def logged_mthd(self : Thunder, *args, **kwargs):
             result = mthd(self, *args, **kwargs)
+            if not isinstance(result, Tensor):
+                raise ValueError(f'Metric {mthd.__name__} did not return a tensor')
+            if not result.dim() == 0:
+                raise ValueError(f'Metric {mthd.__name__} did not return a scalar tensor')
+
             if not mthd.__name__ in self.function_logs:
                 self.function_logs[metric_name] = Metric(name=metric_name, log_average=log_average)
             self.function_logs[metric_name].increment(result.item())
