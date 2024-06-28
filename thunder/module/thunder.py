@@ -9,8 +9,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from thunder.configs import RunConfigs, ComputeConfigs
 from thunder.logging import Metric, WBLogger
-from .compute_configurable import ComputeConfigurable
-
+from .configurable import ComputeConfigurable
 
 # ---------------------------------------------------------
 
@@ -146,7 +145,7 @@ class Thunder(ComputeConfigurable):
 
             if not mthd.__name__ in self.metric_map:
                 self.metric_map[metric_name] = Metric(log_average=log_average)
-            self.metric_map[metric_name].increment(result.item())
+            self.metric_map[metric_name].add(new_values=[result.item()])
             return result
 
         return logged_mthd

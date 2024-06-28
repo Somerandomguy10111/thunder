@@ -72,7 +72,6 @@ class ComputeConfigurable(torch.nn.Module):
 
 
 
-
 class ThunderDataset(Dataset):
     def __init__(self, dataset : Dataset, device : torchdevice, dtype : torchdtype):
         self.base_dataset : Dataset = dataset

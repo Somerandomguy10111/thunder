@@ -1,21 +1,20 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class Metric:
-    num_calls : int = 0
-    sum_value : float = 0
+    values: list[float] = field(default_factory=list)
     log_average : bool = False
     
-    def increment(self, value : float, num_calls : int = 1):
-        self.num_calls += num_calls
-        self.sum_value += value
-
+    def add(self, new_values : list[float]):
+        self.values += new_values
 
     @property
     def value(self):
+        sum_value = sum(self.values)
+
         if self.log_average:
-            value = self.sum_value / self.num_calls
+            value = sum_value / len(self.values)
         else:
-            value = self.sum_value
+            value = sum_value
         return value
