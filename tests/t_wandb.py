@@ -7,7 +7,7 @@ from torchvision import datasets, transforms
 from torch.utils.data import random_split
 
 from thunder.configs import RunConfigs, ComputeConfigs
-from thunder.logging.wblogger import WBLogger
+from thunder.logging import WBLogger
 
 
 # ---------------------------------------------------------
