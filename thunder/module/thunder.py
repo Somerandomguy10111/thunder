@@ -1,13 +1,14 @@
 import os.path
 from abc import abstractmethod
-from typing import Optional
+from typing import Optional, Callable
 
-from holytools.logging import LoggerFactory
 import torch
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
-from .configs import ComputeConfigs, RunConfigs, ThunderDataset, WBLogger
+from holytools.logging import LoggerFactory
+from thunder.logging.wblogger import WBLogger
+from .configs import ComputeConfigs, RunConfigs, ThunderDataset
 
 thunderLogger = LoggerFactory.make_logger(name=__name__)
 # ---------------------------------------------------------
@@ -19,6 +20,7 @@ class Thunder(torch.nn.Module):
         self.set_compute_defaults(compute_configs)
         self.wblogger : Optional[WBLogger] = None
         self.compute_configs : ComputeConfigs = compute_configs
+        self.metrics : dict[str, float] = {}
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
         print(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
@@ -70,7 +72,6 @@ class Thunder(torch.nn.Module):
                 self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
-        self.on_epoch_done()
 
 
     def make_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
@@ -92,15 +93,17 @@ class Thunder(torch.nn.Module):
 
         if not self.wblogger is None:
             self.wblogger.increment_epoch()
+            self.log_metrics(is_training=True)
 
 
     def validate_epoch(self, val_loader : DataLoader):
+        self.eval()
         val_loss = 0
         for batch in val_loader:
             inputs, labels = batch
             loss = self.get_loss(predicted=self(inputs), target=labels)
             val_loss += loss.item()
-
+        self.log_metrics(is_training=False)
 
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
@@ -129,6 +132,18 @@ class Thunder(torch.nn.Module):
         torch.save(checkpoint, fpath)
 
     # ---------------------------------------------------------
+    # logging
+
+    def log_metrics(self, is_training : bool):
+        for k,v in self.metrics.items():
+            if is_training:
+                self.wblogger.log_training_metric(name=k, value=v)
+            else:
+                self.wblogger.log_validation_metric(name=k, value=v)
+        for k in self.metrics:
+            self.metrics[k] = 0
+
+    # ---------------------------------------------------------
     # properties
 
     @classmethod
@@ -150,6 +165,19 @@ class Thunder(torch.nn.Module):
         except StopIteration:
             param = next(self.buffers())
         return param.dtype
+
+
+    @staticmethod
+    def add_metric(mthd : Callable):
+        def logged_mthd(self : Thunder, *args, **kwargs):
+            result = mthd(self, *args, **kwargs)
+            if not mthd.__name__ in self.metrics:
+                self.metrics[mthd.__name__] = result.item()
+            else:
+                self.metrics[mthd.__name__] += result.item()
+            return result
+
+        return logged_mthd
 
 class DatatypeError(Exception):
     pass
