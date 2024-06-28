@@ -145,7 +145,7 @@ class Thunder(ComputeConfigurable):
 
             if not mthd.__name__ in self.metric_map:
                 self.metric_map[metric_name] = Metric(log_average=log_average)
-            self.metric_map[metric_name].add(new_values=[result.item()])
+            self.metric_map[metric_name].add(new_values=result.tolist())
             return result
 
         return logged_mthd
