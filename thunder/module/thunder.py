@@ -7,22 +7,21 @@ from tabulate import tabulate
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
-from holytools.logging import LoggerFactory
-from thunder.logging import Metric, WBLogger
 from thunder.configs import RunConfigs, ComputeConfigs
-from .compute_configurable import ComputeConfigurable, ThunderDataset
+from thunder.logging import Metric, WBLogger
+from .compute_configurable import ComputeConfigurable
 
-thunderLogger = LoggerFactory.make_logger(name=__name__)
+
 # ---------------------------------------------------------
 
 class Thunder(ComputeConfigurable):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__(compute_configs=compute_configs)
         self.wblogger : Optional[WBLogger] = None
-        self.function_logs : dict[str, Metric] = {}
+        self.metric_map : dict[str, Metric] = {}
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
-        print(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
+
 
     @abstractmethod
     def __set__model__(self):
@@ -90,7 +89,8 @@ class Thunder(ComputeConfigurable):
             inputs, labels = batch
             loss = self.get_loss(predicted=self(inputs), target=labels)
             val_loss += loss.item()
-        self.log_metrics(is_training=False)
+        if not self.wblogger is None:
+            self.log_metrics(is_training=False)
 
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
@@ -123,16 +123,17 @@ class Thunder(ComputeConfigurable):
 
     def log_metrics(self, is_training : bool):
         table_data = []
-        for k,v in self.function_logs.items():
+        for k,v in self.metric_map.items():
             if is_training:
                 self.wblogger.log_training_quantity(name=k, value=v.value)
             else:
                 self.wblogger.log_validation_quantity(name=k, value=v.value)
             table_data.append([k, v.value])
-        self.function_logs = {}
+        self.metric_map = {}
         table = tabulate(table_data, headers=['Metric', 'Value'], tablefmt='psql')
         print(f'Epoch {self.wblogger.current_epoch} {"Training" if is_training else "Validation"} metrics:')
         print(table)
+        print()
 
     @staticmethod
     def add_metric(mthd : Callable, name_override : Optional[str] = None, log_average : bool = False):
@@ -143,9 +144,9 @@ class Thunder(ComputeConfigurable):
             if not isinstance(result, Tensor):
                 raise ValueError(f'Metric {mthd.__name__} did not return a tensor')
 
-            if not mthd.__name__ in self.function_logs:
-                self.function_logs[metric_name] = Metric(name=metric_name, log_average=log_average)
-            self.function_logs[metric_name].increment(result.item())
+            if not mthd.__name__ in self.metric_map:
+                self.metric_map[metric_name] = Metric(log_average=log_average)
+            self.metric_map[metric_name].increment(result.item())
             return result
 
         return logged_mthd

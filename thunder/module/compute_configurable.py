@@ -3,16 +3,14 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import torch
-from holytools.logging import LoggerFactory
 from torch import device as torchdevice
 from torch import dtype as torchdtype
 from torch.utils.data import DataLoader, Dataset
 
 from thunder.configs.compute import ComputeConfigs
+from thunder.logging import thunderLogger
 
-thunderLogger = LoggerFactory.make_logger(name=__name__)
 # ---------------------------------------------------------
-
 
 class ComputeConfigurable(torch.nn.Module):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):

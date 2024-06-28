@@ -11,7 +11,7 @@ import wandb
 from torch import Tensor
 from torch.optim import Optimizer
 
-from thunder.logging.wblogger import WBLogger
+from thunder.logging.loggers import WBLogger
 
 # ---------------------------------------------------------
 

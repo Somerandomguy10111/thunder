@@ -1,2 +1,2 @@
 from .metric import Metric
-from .wblogger import WBLogger
+from .loggers import WBLogger, thunderLogger

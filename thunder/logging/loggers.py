@@ -4,7 +4,13 @@ import os
 
 from wandb.sdk.wandb_run import Run
 
+from holytools.logging import LoggerFactory
 
+thunderLogger = LoggerFactory.make_logger(name=__name__)
+
+
+
+# ---------------------------------------------------------
 class WBLogger:
     def __init__(self, run : Run):
         self.run : Run = run

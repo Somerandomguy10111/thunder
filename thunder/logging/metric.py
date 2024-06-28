@@ -3,13 +3,12 @@ from dataclasses import dataclass
 
 @dataclass
 class Metric:
-    name: str
     num_calls : int = 0
     sum_value : float = 0
     log_average : bool = False
     
-    def increment(self, value : float):
-        self.num_calls += 1
+    def increment(self, value : float, num_calls : int = 1):
+        self.num_calls += num_calls
         self.sum_value += value
 
 
