@@ -70,6 +70,7 @@ class Thunder(torch.nn.Module):
                 self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
+        self.on_epoch_done()
 
 
     def make_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
@@ -80,7 +81,6 @@ class Thunder(torch.nn.Module):
     # optimization
 
     def train_epoch(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer, model : nn.Module):
-        training_loss = 0
         for j, batch in enumerate(train_loader):
             inputs, labels = batch
             loss = self.get_loss(predicted=model(inputs), target=labels)
@@ -88,12 +88,10 @@ class Thunder(torch.nn.Module):
             optimizer.step()
             optimizer.zero_grad()
 
-            training_loss += loss.item()
             self.wblogger.increment_batch()
 
         if not self.wblogger is None:
             self.wblogger.increment_epoch()
-            self.wblogger.log_training_metric(name='Loss',value=training_loss)
 
 
     def validate_epoch(self, val_loader : DataLoader):
@@ -102,9 +100,6 @@ class Thunder(torch.nn.Module):
             inputs, labels = batch
             loss = self.get_loss(predicted=self(inputs), target=labels)
             val_loss += loss.item()
-
-        if not self.wblogger is None:
-            self.wblogger.log_validation_metric(name='Loss', value=val_loss)
 
 
     @abstractmethod
