@@ -1,3 +1,4 @@
 from .thunder import Thunder
-from .configs import ComputeConfigs, RunConfigs
+from ..configs.compute import ComputeConfigs
+from ..configs.run import RunConfigs
 from .descent import Adam, SGD

@@ -3,10 +3,12 @@ from holytools.devtools import Unittest
 from tests.mnist import MnistMLP
 from torchvision import datasets, transforms
 
-from thunder.module import RunConfigs, ComputeConfigs
-from thunder.module.configs import WBLogger
+from thunder import RunConfigs, ComputeConfigs
 
 from torch.utils.data import random_split
+
+from thunder.logging.wblogger import WBLogger
+
 
 # ---------------------------------------------------------
 

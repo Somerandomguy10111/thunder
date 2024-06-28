@@ -24,13 +24,13 @@ class WBLogger:
     # logging
 
 
-    def log_validation_metric(self, name: str, value: float):
-        self.log_metric(name=f'Training/{name}', value=value)
+    def log_validation_quantity(self, name: str, value: float):
+        self.log_quantity(name=f'Training/{name}', value=value)
 
-    def log_training_metric(self, name: str, value: float):
-        self.log_metric(name=f'Validation/{name}', value=value)
+    def log_training_quantity(self, name: str, value: float):
+        self.log_quantity(name=f'Validation/{name}', value=value)
 
-    def log_metric(self, name: str, value: float):
+    def log_quantity(self, name: str, value: float):
         self.log(metric_dict={name: value})
 
     def log(self, metric_dict: dict[str, int | float]):
@@ -46,3 +46,6 @@ class WBLogger:
             return True
         else:
             return False
+
+
+

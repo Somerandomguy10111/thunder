@@ -1,15 +1,11 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+
 import os
+from dataclasses import dataclass
 
-from thunder.logging.wblogger import WBLogger
-from torch import device, dtype
-from torch.utils.data import Dataset
 import torch
-
-import wandb
-
-from .descent import Descent, Adam
+from torch import dtype, device
+from torch.utils.data import Dataset
 
 # ---------------------------------------------------------
 
@@ -54,33 +50,3 @@ class ThunderDataset(Dataset):
             content = content
 
         return content
-
-
-@dataclass
-class RunConfigs:
-    epochs : int = 1
-    batch_size : int = 32
-    descent: Descent = field(default_factory=Adam)
-    save_folderpath = os.path.expanduser(f'~/.py_thunder')
-    save_on_done : bool = True
-    save_on_epoch : bool = True
-    project_name : str = 'unnamed_project'
-    enable_logging : bool = False
-
-
-    def make_wandb_logger(self) -> WBLogger:
-        config = {
-            'lr': self.descent.lr,
-            'batch_size': self.batch_size,
-            'optimizer': self.descent.get_algorithm().__name__,
-            'epochs': self.epochs,
-            'model_architecture': 'unnamed architecture',
-            'dataset': 'unnamed dataset',
-            'experiment_name': 'unnamed experiment',
-            'step_metric' : 'epoch'
-        }
-        log_dirpath = os.path.expanduser(path='~/.wb_logs')
-        wandb_run = wandb.init(project=self.project_name, config=config, dir=log_dirpath)
-        return WBLogger(run=wandb_run)
-
-

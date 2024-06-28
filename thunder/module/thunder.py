@@ -8,7 +8,9 @@ from torch.utils.data import DataLoader, Dataset
 
 from holytools.logging import LoggerFactory
 from thunder.logging.wblogger import WBLogger
-from .configs import ComputeConfigs, RunConfigs, ThunderDataset
+from ..configs.compute import ThunderDataset
+from .. import RunConfigs, ComputeConfigs
+from thunder.logging.metric import Metric
 
 thunderLogger = LoggerFactory.make_logger(name=__name__)
 # ---------------------------------------------------------
@@ -20,7 +22,7 @@ class Thunder(torch.nn.Module):
         self.set_compute_defaults(compute_configs)
         self.wblogger : Optional[WBLogger] = None
         self.compute_configs : ComputeConfigs = compute_configs
-        self.metrics : dict[str, float] = {}
+        self.function_logs : dict[str, Metric] = {}
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
         print(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
@@ -135,13 +137,26 @@ class Thunder(torch.nn.Module):
     # logging
 
     def log_metrics(self, is_training : bool):
-        for k,v in self.metrics.items():
+        for k,v in self.function_logs.items():
             if is_training:
-                self.wblogger.log_training_metric(name=k, value=v)
+                self.wblogger.log_training_quantity(name=k, value=v.value)
             else:
-                self.wblogger.log_validation_metric(name=k, value=v)
-        for k in self.metrics:
-            self.metrics[k] = 0
+                self.wblogger.log_validation_quantity(name=k, value=v.value)
+        self.function_logs = {}
+
+
+    @staticmethod
+    def add_metric(mthd : Callable, name_override : Optional[str] = None, log_average : bool = False):
+        metric_name = name_override if not name_override is None else mthd.__name__
+
+        def logged_mthd(self : Thunder, *args, **kwargs):
+            result = mthd(self, *args, **kwargs)
+            if not mthd.__name__ in self.function_logs:
+                self.function_logs[metric_name] = Metric(name=metric_name, log_average=log_average)
+            self.function_logs[metric_name].increment(result.item())
+            return result
+
+        return logged_mthd
 
     # ---------------------------------------------------------
     # properties
@@ -167,17 +182,6 @@ class Thunder(torch.nn.Module):
         return param.dtype
 
 
-    @staticmethod
-    def add_metric(mthd : Callable):
-        def logged_mthd(self : Thunder, *args, **kwargs):
-            result = mthd(self, *args, **kwargs)
-            if not mthd.__name__ in self.metrics:
-                self.metrics[mthd.__name__] = result.item()
-            else:
-                self.metrics[mthd.__name__] += result.item()
-            return result
-
-        return logged_mthd
 
 class DatatypeError(Exception):
     pass
