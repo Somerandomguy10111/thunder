@@ -37,21 +37,17 @@ class Thunder(ComputeConfigurable):
     def do_training(self, train_data: Dataset,
                           val_data: Optional[Dataset] = None,
                           run_configs : RunConfigs = RunConfigs()):
-        to_thunder_dataset = lambda dataset : ThunderDataset(dataset=dataset,
-                                                             device=self.compute_configs.device,
-                                                             dtype=self.compute_configs.dtype)
-        train_data = to_thunder_dataset(dataset=train_data)
+        train_data = self.to_thunder_dataset(dataset=train_data)
         train_loader = self.make_dataloader(dataset=train_data, batch_size=run_configs.batch_size)
 
         if val_data:
-            val_data = to_thunder_dataset(dataset=val_data)
+            val_data = self.to_thunder_dataset(dataset=val_data)
             val_loader = self.make_dataloader(dataset=val_data, batch_size=run_configs.batch_size)
         else:
             val_loader = None
         if run_configs.enable_logging:
             self.wblogger = run_configs.make_wandb_logger()
 
-        self.train()
         train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
         for epoch in range(run_configs.epochs):
@@ -68,6 +64,7 @@ class Thunder(ComputeConfigurable):
     # optimization
 
     def train_epoch(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer, model : nn.Module):
+        self.train()
         for j, batch in enumerate(train_loader):
             inputs, labels = batch
             loss = self.get_loss(predicted=model(inputs), target=labels)

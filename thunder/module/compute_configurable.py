@@ -42,7 +42,7 @@ class ComputeConfigurable(torch.nn.Module):
     # ---------------------------------------------------------
     # training routine
 
-    def to_thunder_dataset(self, dataset : Dataset):
+    def to_thunder_dataset(self, dataset : Dataset) -> ThunderDataset:
         return ThunderDataset(dataset=dataset, device=self.device, dtype=self.dtype)
 
     def make_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
