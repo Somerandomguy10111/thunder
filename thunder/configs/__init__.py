@@ -1,2 +1,2 @@
 from .run import RunConfigs
-from .compute import ComputeConfigs
+from .compute import ComputeConfigs, Devices

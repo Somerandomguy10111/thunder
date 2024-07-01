@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import torch
+from GPUtil import GPU
 from torch import device as torchdevice
 from torch import dtype as torchdtype
 from torch.utils.data import DataLoader, Dataset
@@ -10,13 +11,16 @@ from torch.utils.data import DataLoader, Dataset
 from thunder.configs.compute import ComputeConfigs
 from thunder.logging import thunderLogger
 
+import GPUtil
+
 # ---------------------------------------------------------
 
-class ComputeConfigurable(torch.nn.Module):
+class ComputeManaged(torch.nn.Module):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
         self.set_compute_defaults(compute_configs)
         self.compute_configs : ComputeConfigs = compute_configs
+        self.gpus : list[GPU] = GPUtil.getGPUs()[:self.compute_configs.num_gpus]
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
         print(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')

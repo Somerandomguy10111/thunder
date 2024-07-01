@@ -24,3 +24,6 @@ class ComputeConfigs:
         return torch_device
 
 
+class Devices:
+    gpu : device = device('cuda')
+    cpu : device = device('cpu')

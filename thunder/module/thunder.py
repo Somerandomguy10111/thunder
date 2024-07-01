@@ -8,13 +8,14 @@ from holytools.userIO import TrackedInt
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
-from thunder.configs import RunConfigs, ComputeConfigs
+from thunder.configs import RunConfigs, ComputeConfigs, Devices
 from thunder.logging import Metric, WBLogger, thunderLogger
-from .configurable import ComputeConfigurable
+from .configurable import ComputeManaged
+
 
 # ---------------------------------------------------------
 
-class Thunder(ComputeConfigurable):
+class Thunder(ComputeManaged):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__(compute_configs=compute_configs)
         self.wblogger : Optional[WBLogger] = None
@@ -75,11 +76,12 @@ class Thunder(ComputeConfigurable):
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            tracked_int.increment(to_add=1)
 
+            tracked_int.increment(to_add=1)
             if not self.wblogger is None:
                 self.wblogger.increment_batch()
                 self.wblogger.log_quantity(name='batch', value=self.wblogger.current_batch)
+                self.log_compute_resources()
 
         if not tracked_int.progressbar.finished():
             tracked_int.finish()
@@ -127,6 +129,12 @@ class Thunder(ComputeConfigurable):
 
     # ---------------------------------------------------------
     # logging
+
+    def log_compute_resources(self):
+        if self.compute_configs.device == Devices.gpu:
+            free_gpu_memory_mb = sum([gpu.memoryFree for gpu in self.gpus])
+            self.wblogger.log_system_resource(name='Total free GPU Memory in MB', value=free_gpu_memory_mb)
+
 
     def log_metrics(self, is_training : bool):
         for k,v in self.metric_map.items():
