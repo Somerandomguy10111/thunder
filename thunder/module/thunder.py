@@ -135,21 +135,26 @@ class Thunder(ComputeConfigurable):
         print()
 
     @staticmethod
-    def add_metric(mthd : Callable, name_override : Optional[str] = None, log_average : bool = False):
+    def add_metric(mthd : Callable[..., Tensor | float | list[float]], name_override : Optional[str] = None, log_average : bool = False):
         metric_name = name_override if not name_override is None else mthd.__name__
 
         def logged_mthd(self : Thunder, *args, **kwargs):
             result = mthd(self, *args, **kwargs)
-            if not isinstance(result, Tensor):
-                raise ValueError(f'Metric {mthd.__name__} did not return a tensor')
+
+            if isinstance(result, Tensor):
+                result = result.tolist()
+                result = [float(x) for x in result]
+            if isinstance(result, list):
+                print(f'Result is list: {result}')
+                if not all([isinstance(v, float) for v in result]):
+                    raise ValueError(f'Metric {mthd.__name__} did not return a list of floats')
+            if isinstance(result, float):
+                result = [result]
+            result : list[float]
 
             if not mthd.__name__ in self.metric_map:
                 self.metric_map[metric_name] = Metric(log_average=log_average)
-
-            value = result.tolist()
-            if isinstance(value, float):
-                value = [value]
-            self.metric_map[metric_name].add(new_values=value)
+            self.metric_map[metric_name].add(new_values=result)
             return result
 
         return logged_mthd
