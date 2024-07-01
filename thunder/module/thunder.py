@@ -1,3 +1,4 @@
+import copy
 import os.path
 from abc import abstractmethod
 from typing import Optional, Callable
@@ -141,20 +142,21 @@ class Thunder(ComputeConfigurable):
         def logged_mthd(self : Thunder, *args, **kwargs):
             result = mthd(self, *args, **kwargs)
 
-            if isinstance(result, Tensor):
-                result = result.tolist()
-                result = [float(x) for x in result]
-            if isinstance(result, list):
-                print(f'Result is list: {result}')
-                if not all([isinstance(v, float) for v in result]):
+            logged_values = copy.copy(result)
+            if isinstance(logged_values, Tensor):
+                logged_values = logged_values.tolist()
+                logged_values = [float(x) for x in logged_values]
+            if isinstance(logged_values, list):
+                if not all([isinstance(v, float) for v in logged_values]):
                     raise ValueError(f'Metric {mthd.__name__} did not return a list of floats')
-            if isinstance(result, float):
-                result = [result]
-            result : list[float]
+            if isinstance(logged_values, float):
+                logged_values = [logged_values]
+            logged_values : list[float]
 
             if not mthd.__name__ in self.metric_map:
                 self.metric_map[metric_name] = Metric(log_average=log_average)
-            self.metric_map[metric_name].add(new_values=result)
+            self.metric_map[metric_name].add(new_values=logged_values)
+
             return result
 
         return logged_mthd
