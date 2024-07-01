@@ -67,7 +67,7 @@ class Thunder(ComputeConfigurable):
 
     def train_epoch(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer, model : nn.Module):
         self.train()
-        tracked_int = TrackedInt(start_value=1, finish_value=)
+        tracked_int = TrackedInt(start_value=1, finish_value=len(train_loader))
 
         for batch in train_loader:
             inputs, labels = batch
@@ -75,11 +75,14 @@ class Thunder(ComputeConfigurable):
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
+            tracked_int.increment(to_add=1)
 
             if not self.wblogger is None:
                 self.wblogger.increment_batch()
                 self.wblogger.log_quantity(name='batch', value=self.wblogger.current_batch)
 
+        if not tracked_int.progressbar.finished():
+            tracked_int.finish()
         if not self.wblogger is None:
             self.wblogger.increment_epoch()
             self.wblogger.log_quantity(name='epoch', value=self.wblogger.current_epoch)
@@ -142,21 +145,25 @@ class Thunder(ComputeConfigurable):
         def logged_mthd(self : Thunder, *args, **kwargs):
             result = mthd(self, *args, **kwargs)
 
-            logged_values = copy.copy(result)
-            if isinstance(logged_values, Tensor):
-                logged_values = logged_values.tolist()
-                logged_values = [float(x) for x in logged_values]
-            if isinstance(logged_values, list):
-                if not all([isinstance(v, float) for v in logged_values]):
-                    raise ValueError(f'Metric {mthd.__name__} did not return a list of floats')
-            if isinstance(logged_values, float):
-                logged_values = [logged_values]
-            logged_values : list[float]
+            try:
+                logged_values = copy.copy(result)
+                if isinstance(logged_values, Tensor):
+                    logged_values = logged_values.tolist()
+                if isinstance(logged_values, list):
+                    logged_values = [float(x) for x in logged_values]
+                if isinstance(logged_values, float):
+                    logged_values = [logged_values]
+                logged_values : list[float]
 
-            if not mthd.__name__ in self.metric_map:
-                self.metric_map[metric_name] = Metric(log_average=log_average)
-            self.metric_map[metric_name].add(new_values=logged_values)
+                if not mthd.__name__ in self.metric_map:
+                    self.metric_map[metric_name] = Metric(log_average=log_average)
+                self.metric_map[metric_name].add(new_values=logged_values)
+
+            except Exception as e:
+                print(f'Failed to log metric {metric_name} due to exception: {e}')
 
             return result
+
+
 
         return logged_mthd
