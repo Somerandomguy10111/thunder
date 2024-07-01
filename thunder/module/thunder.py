@@ -4,12 +4,12 @@ from abc import abstractmethod
 from typing import Optional, Callable
 
 import torch
-from tabulate import tabulate
+from holytools.userIO import TrackedInt
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
 from thunder.configs import RunConfigs, ComputeConfigs
-from thunder.logging import Metric, WBLogger
+from thunder.logging import Metric, WBLogger, thunderLogger
 from .configurable import ComputeConfigurable
 
 # ---------------------------------------------------------
@@ -50,7 +50,9 @@ class Thunder(ComputeConfigurable):
 
         train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
+        thunderLogger.info(msg=f'[Thunder module {self.get_name()}]: Starting training')
         for epoch in range(run_configs.epochs):
+            thunderLogger.info(f'[Thunder module {self.get_name()}]: Training epoch number {epoch}...')
             self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=train_model)
             if val_loader:
                 self.validate_epoch(val_loader=val_loader)
@@ -65,7 +67,9 @@ class Thunder(ComputeConfigurable):
 
     def train_epoch(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer, model : nn.Module):
         self.train()
-        for j, batch in enumerate(train_loader):
+        tracked_int = TrackedInt(start_value=1, finish_value=)
+
+        for batch in train_loader:
             inputs, labels = batch
             loss = self.get_loss(predicted=model(inputs), target=labels)
             loss.backward()
@@ -122,21 +126,17 @@ class Thunder(ComputeConfigurable):
     # logging
 
     def log_metrics(self, is_training : bool):
-        table_data = []
         for k,v in self.metric_map.items():
             if is_training:
                 self.wblogger.log_training_quantity(name=k, value=v.value)
             else:
                 self.wblogger.log_validation_quantity(name=k, value=v.value)
-            table_data.append([k, v.value])
         self.metric_map = {}
-        table = tabulate(table_data, headers=['Metric', 'Value'], tablefmt='psql')
-        print(f'Epoch {self.wblogger.current_epoch} {"Training" if is_training else "Validation"} metrics:')
-        print(table)
-        print()
 
     @staticmethod
-    def add_metric(mthd : Callable[..., Tensor | float | list[float]], name_override : Optional[str] = None, log_average : bool = False):
+    def add_metric(mthd : Callable[..., Tensor | float | list[float]],
+                   name_override : Optional[str] = None,
+                   log_average : bool = False):
         metric_name = name_override if not name_override is None else mthd.__name__
 
         def logged_mthd(self : Thunder, *args, **kwargs):
