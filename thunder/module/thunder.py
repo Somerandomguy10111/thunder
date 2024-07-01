@@ -68,7 +68,10 @@ class Thunder(ComputeManaged):
 
     def train_epoch(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer, model : nn.Module):
         self.train()
-        tracked_int = TrackedInt(start_value=1, finish_value=len(train_loader))
+
+        print(f'Len of train_loaaader = {len(train_loader)}')
+        min_batches = max(len(train_loader),1)
+        tracked_int = TrackedInt(start_value=0, finish_value=min_batches)
 
         for batch in train_loader:
             inputs, labels = batch
