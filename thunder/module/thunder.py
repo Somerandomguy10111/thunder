@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from thunder.configs import RunConfigs, ComputeConfigs, Devices
 from thunder.logging import Metric, WBLogger, thunderLogger
-from .configurable import ComputeManaged
+from .managed import ComputeManaged
 
 
 # ---------------------------------------------------------
@@ -106,28 +106,6 @@ class Thunder(ComputeManaged):
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
         pass
-
-    # ---------------------------------------------------------
-    # save/load
-
-    @classmethod
-    def load(cls, fpath: str):
-        checkpoint = torch.load(fpath)
-        model = cls(compute_configs=checkpoint['compute_configs'])
-        model.load_state_dict(checkpoint['state_dict'])
-        return model
-
-
-    def save(self, fpath : str):
-        save_fpath = os.path.abspath(os.path.relpath(fpath))
-        save_dirpath = os.path.dirname(save_fpath)
-        os.makedirs(save_dirpath, exist_ok=True)
-
-        checkpoint = {
-            'state_dict': self.state_dict(),
-            'compute_configs': self.compute_configs
-        }
-        torch.save(checkpoint, fpath)
 
     # ---------------------------------------------------------
     # logging

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from abc import abstractmethod
 
 import torch
@@ -32,6 +33,10 @@ class ComputeManaged(torch.nn.Module):
         torch.set_default_device(device=target_device)
         thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {target_dtype}')
         torch.set_default_dtype(d=target_dtype)
+        thunderLogger.warning(f'')
+        if self.compute_configs.allow_tensor_cores:
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
 
     @abstractmethod
     def __set__model__(self):
@@ -42,7 +47,7 @@ class ComputeManaged(torch.nn.Module):
         pass
 
     # ---------------------------------------------------------
-    # training routine
+    # training
 
     def to_thunder_dataset(self, dataset : Dataset) -> ThunderDataset:
         return ThunderDataset(dataset=dataset, device=self.device, dtype=self.dtype)
@@ -50,6 +55,28 @@ class ComputeManaged(torch.nn.Module):
     def make_dataloader(self, dataset : Dataset, batch_size : int) -> DataLoader:
         rng = torch.Generator(device=str(self.device))
         return DataLoader(dataset, batch_size=batch_size, shuffle=True, generator=rng)
+
+    # ---------------------------------------------------------
+    # save/load
+
+    @classmethod
+    def load(cls, fpath: str):
+        checkpoint = torch.load(fpath)
+        model = cls(compute_configs=checkpoint['compute_configs'])
+        model.load_state_dict(checkpoint['state_dict'])
+        return model
+
+
+    def save(self, fpath : str):
+        save_fpath = os.path.abspath(os.path.relpath(fpath))
+        save_dirpath = os.path.dirname(save_fpath)
+        os.makedirs(save_dirpath, exist_ok=True)
+
+        checkpoint = {
+            'state_dict': self.state_dict(),
+            'compute_configs': self.compute_configs
+        }
+        torch.save(checkpoint, fpath)
 
     # ---------------------------------------------------------
     # properties
@@ -80,11 +107,6 @@ class ThunderDataset(Dataset):
         self.base_dataset : Dataset = dataset
         self.device : device = device
         self.dtype : dtype = dtype
-
-    # noinspection PyTypeChecker
-    def __len__(self):
-        return len(self.base_dataset)
-
 
     def __getitem__(self, idx):
         content = self.base_dataset[idx]
