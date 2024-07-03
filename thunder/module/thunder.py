@@ -90,7 +90,7 @@ class Thunder(ComputeManaged):
         if not self.wblogger is None:
             self.wblogger.increment_epoch()
             self.wblogger.log_quantity(name='epoch', value=self.wblogger.current_epoch)
-            self.log_metrics(is_training=True)
+            self.log_batch_metrics(is_training=True)
 
 
     def validate_epoch(self, val_loader : DataLoader):
@@ -101,7 +101,7 @@ class Thunder(ComputeManaged):
             loss = self.get_loss(predicted=self(inputs), target=labels)
             val_loss += loss.item()
         if not self.wblogger is None:
-            self.log_metrics(is_training=False)
+            self.log_batch_metrics(is_training=False)
 
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
@@ -134,23 +134,10 @@ class Thunder(ComputeManaged):
 
     def log_compute_resources(self):
         if self.compute_configs.device == Devices.gpu:
-            for gpu in self.gpus:
-                gpu_memory_load_factor = (gpu.memoryTotal-gpu.memoryFree) / gpu.memoryTotal
-                self.wblogger.log_system(name=f'GPU {gpu.id} free memory in GB', value=gpu.memoryFree / 1024)
-                self.wblogger.log_system(name=f'GPU {gpu.id} memory load', value=gpu_memory_load_factor)
-            free_gpu_memory_mb = sum([gpu.memoryFree for gpu in self.gpus])
-            total_gpu_memory_mb = sum([gpu.memoryTotal for gpu in self.gpus])
-            memory_load_factor = (total_gpu_memory_mb-free_gpu_memory_mb) / total_gpu_memory_mb
-            self.wblogger.log_system(name='Free GPU memory in GB', value=free_gpu_memory_mb / 1024)
-            self.wblogger.log_system(name='GPU memory load', value=memory_load_factor)
+            self.wblogger.log_gpu_resources(gpus=self.gpus)
 
-
-    def log_metrics(self, is_training : bool):
-        for k,v in self.metric_map.items():
-            if is_training:
-                self.wblogger.log_training_quantity(name=k, value=v.value)
-            else:
-                self.wblogger.log_validation_quantity(name=k, value=v.value)
+    def log_batch_metrics(self, is_training : bool):
+        self.wblogger.log_metrics(metric_map=self.metric_map, is_training=is_training)
         self.metric_map = {}
 
     @staticmethod
