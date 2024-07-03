@@ -19,9 +19,9 @@ import GPUtil
 class ComputeManaged(torch.nn.Module):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
-        self.set_compute_defaults(compute_configs)
         self.compute_configs : ComputeConfigs = compute_configs
         self.gpus : list[GPU] = GPUtil.getGPUs()[:self.compute_configs.num_gpus]
+        self.set_compute_defaults(compute_configs)
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
         print(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
@@ -33,8 +33,8 @@ class ComputeManaged(torch.nn.Module):
         torch.set_default_device(device=target_device)
         thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {target_dtype}')
         torch.set_default_dtype(d=target_dtype)
-        thunderLogger.warning(f'')
-        if self.compute_configs.allow_tensor_cores:
+        thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
+        if compute_configs.allow_tensor_cores:
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
 
@@ -107,6 +107,13 @@ class ThunderDataset(Dataset):
         self.base_dataset : Dataset = dataset
         self.device : device = device
         self.dtype : dtype = dtype
+
+    def __len__(self):
+        if hasattr(self.base_dataset, '__len__'):
+            # noinspection PyTypeChecker
+            return len(self.base_dataset)
+        else:
+            raise NotImplementedError
 
     def __getitem__(self, idx):
         content = self.base_dataset[idx]

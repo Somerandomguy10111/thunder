@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import os
 from dataclasses import dataclass
 
@@ -24,7 +25,16 @@ class ComputeConfigs:
         torch_device = device('cuda') if self.num_gpus > 0 else torch.device('cpu')
         return torch_device
 
+    def __str__(self):
+        the_str = f'ComputeConfigs:\n'
+        for k,v in dataclasses.asdict(self).items():
+            the_str += f'-{k}: {v}\n'
+        return the_str
 
 class Devices:
     gpu : device = device('cuda')
     cpu : device = device('cpu')
+
+
+if __name__ == "__main__":
+    print(ComputeConfigs())
