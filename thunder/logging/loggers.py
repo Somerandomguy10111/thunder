@@ -36,8 +36,8 @@ class WBLogger:
     def log_training_quantity(self, name: str, value: float):
         self.log_quantity(name=f'Training/{name}', value=value)
 
-    def log_system_resource(self, name : str, value : float):
-        self.log_quantity(name=f'Resources/{name}', value=value)
+    def log_system(self, name : str, value : float):
+        self.log_quantity(name=f'System/{name}', value=value)
 
     def log_quantity(self, name: str, value: float):
         self.log(metric_dict={name: value})

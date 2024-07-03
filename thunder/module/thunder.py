@@ -135,8 +135,16 @@ class Thunder(ComputeManaged):
 
     def log_compute_resources(self):
         if self.compute_configs.device == Devices.gpu:
+            for gpu in self.gpus:
+                gpu_memory_load_factor = (gpu.memoryTotal-gpu.memoryFree) / gpu.memoryTotal
+                self.wblogger.log_system(name=f'GPU {gpu.id} free memory in GB', value=gpu.memoryFree / 1024)
+                self.wblogger.log_system(name=f'GPU {gpu.id} memory load', value=gpu_memory_load_factor)
             free_gpu_memory_mb = sum([gpu.memoryFree for gpu in self.gpus])
-            self.wblogger.log_system_resource(name='Total free GPU Memory in MB', value=free_gpu_memory_mb)
+            total_gpu_memory_mb = sum([gpu.memoryTotal for gpu in self.gpus])
+            memory_load_factor = (total_gpu_memory_mb-free_gpu_memory_mb) / total_gpu_memory_mb
+            self.wblogger.log_system(name='Free GPU memory in GB', value=free_gpu_memory_mb / 1024)
+            self.wblogger.log_system(name='GPU memory load', value=memory_load_factor)
+
 
 
     def log_metrics(self, is_training : bool):
