@@ -69,7 +69,6 @@ class Thunder(ComputeManaged):
     def train_epoch(self, train_loader : DataLoader, optimizer : torch.optim.Optimizer, model : nn.Module):
         self.train()
 
-        print(f'Len of train_loaaader = {len(train_loader)}')
         min_batches = max(len(train_loader),1)
         tracked_int = TrackedInt(start_value=0, finish_value=min_batches)
 
@@ -146,7 +145,6 @@ class Thunder(ComputeManaged):
             self.wblogger.log_system(name='GPU memory load', value=memory_load_factor)
 
 
-
     def log_metrics(self, is_training : bool):
         for k,v in self.metric_map.items():
             if is_training:
@@ -160,12 +158,16 @@ class Thunder(ComputeManaged):
 
         def add_metric_decorator(mthd : Callable[..., Tensor | float | list[float]]):
             metric_name = name_override if not name_override is None else mthd.__name__
+
             def logged_mthd(self: Thunder, *args, **kwargs):
                 result = mthd(self, *args, **kwargs)
 
                 try:
                     logged_values = copy.copy(result)
                     if isinstance(logged_values, Tensor):
+                        if logged_values.dim() > 1:
+                            raise ValueError(f'Can only log 0 axis (scalars) or 1 axis tensors (vectors).'
+                                             f' Metric \"{metric_name}\" has {logged_values.dim()} axes')
                         logged_values = logged_values.tolist()
                     if isinstance(logged_values, list):
                         logged_values = [float(x) for x in logged_values]
@@ -178,7 +180,7 @@ class Thunder(ComputeManaged):
                     self.metric_map[metric_name].add(new_values=logged_values)
 
                 except Exception as e:
-                    print(f'Failed to log metric {metric_name} due to exception: {e}')
+                    thunderLogger.warning(f'Failed to log metric \"{metric_name}\": {e}')
 
                 return result
             return logged_mthd
