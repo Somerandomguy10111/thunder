@@ -156,33 +156,31 @@ class Thunder(ComputeManaged):
         self.metric_map = {}
 
     @staticmethod
-    def add_metric(mthd : Callable[..., Tensor | float | list[float]],
-                   name_override : Optional[str] = None,
-                   log_average : bool = False):
-        metric_name = name_override if not name_override is None else mthd.__name__
+    def add_metric(name_override : Optional[str] = None, report_average : bool = False):
 
-        def logged_mthd(self : Thunder, *args, **kwargs):
-            result = mthd(self, *args, **kwargs)
+        def add_metric_decorator(mthd : Callable[..., Tensor | float | list[float]]):
+            metric_name = name_override if not name_override is None else mthd.__name__
+            def logged_mthd(self: Thunder, *args, **kwargs):
+                result = mthd(self, *args, **kwargs)
 
-            try:
-                logged_values = copy.copy(result)
-                if isinstance(logged_values, Tensor):
-                    logged_values = logged_values.tolist()
-                if isinstance(logged_values, list):
-                    logged_values = [float(x) for x in logged_values]
-                if isinstance(logged_values, float):
-                    logged_values = [logged_values]
-                logged_values : list[float]
+                try:
+                    logged_values = copy.copy(result)
+                    if isinstance(logged_values, Tensor):
+                        logged_values = logged_values.tolist()
+                    if isinstance(logged_values, list):
+                        logged_values = [float(x) for x in logged_values]
+                    if isinstance(logged_values, float):
+                        logged_values = [logged_values]
+                    logged_values: list[float]
 
-                if not mthd.__name__ in self.metric_map:
-                    self.metric_map[metric_name] = Metric(log_average=log_average)
-                self.metric_map[metric_name].add(new_values=logged_values)
+                    if not mthd.__name__ in self.metric_map:
+                        self.metric_map[metric_name] = Metric(log_average=report_average)
+                    self.metric_map[metric_name].add(new_values=logged_values)
 
-            except Exception as e:
-                print(f'Failed to log metric {metric_name} due to exception: {e}')
+                except Exception as e:
+                    print(f'Failed to log metric {metric_name} due to exception: {e}')
 
-            return result
+                return result
+            return logged_mthd
 
-
-
-        return logged_mthd
+        return add_metric_decorator
