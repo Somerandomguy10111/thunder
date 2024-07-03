@@ -24,7 +24,7 @@ class ComputeManaged(torch.nn.Module):
         self.set_compute_defaults(compute_configs)
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
-        print(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
+        thunderLogger.info(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
 
     def set_compute_defaults(self, compute_configs : ComputeConfigs):
         target_device, target_dtype = compute_configs.device, compute_configs.dtype
@@ -33,8 +33,8 @@ class ComputeManaged(torch.nn.Module):
         torch.set_default_device(device=target_device)
         thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {target_dtype}')
         torch.set_default_dtype(d=target_dtype)
-        thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
         if compute_configs.allow_tensor_cores:
+            thunderLogger.warning(f'[Thunder module {self.get_name()}]: Enabling Tensor Cores and TF32')
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
 
