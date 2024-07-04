@@ -30,7 +30,7 @@ class TestWBLogging(Unittest):
             self.skipTest(reason=f'Wandb is unavailable')
 
         compute_configs = ComputeConfigs(num_gpus=1, dtype=torch.float64)
-        run_configs = RunConfigs(epochs=2, enable_logging=True)
+        run_configs = RunConfigs(epochs=2, enable_logging=True, run_name=f't_wandb_run')
         mlp = MnistMLP(compute_configs=compute_configs)
         mlp.do_training(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=run_configs)
 

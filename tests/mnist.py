@@ -23,7 +23,7 @@ class MnistMLP(Thunder):
         y = self.fc3(y)
         return y
 
-    @Thunder.add_metric
+    @Thunder.add_metric()
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
         loss_fn = CrossEntropyLoss()
         return loss_fn(predicted, target)

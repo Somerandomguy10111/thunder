@@ -4,7 +4,7 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from dataclasses import field
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, Optional
 
 import torch
 import wandb
@@ -75,6 +75,7 @@ class RunConfigs:
     save_on_done : bool = True
     save_on_epoch : bool = True
     project_name : str = 'unnamed_project'
+    run_name : Optional[str] = None
     enable_logging : bool = False
 
 
@@ -87,10 +88,10 @@ class RunConfigs:
             'model_architecture': 'unnamed architecture',
             'dataset': 'unnamed dataset',
             'experiment_name': 'unnamed experiment',
-            'step_metric' : 'epoch'
+            'step_metric' : 'epoch',
         }
         log_dirpath = os.path.expanduser(path='~/.wb_logs')
-        wandb_run = wandb.init(project=self.project_name, config=config, dir=log_dirpath)
+        wandb_run = wandb.init(project=self.project_name, name=self.run_name, config=config, dir=log_dirpath)
         return WBLogger(run=wandb_run)
 
 
