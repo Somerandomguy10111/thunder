@@ -14,7 +14,7 @@ from torch import dtype, device
 class ComputeConfigs:
     num_gpus: int = torch.cuda.device_count() if torch.cuda.is_available() else 0
     dtype : dtype = torch.float32
-    allow_tensor_cores : bool = True
+    allow_tensor_cores : bool = False
 
     def get_num_devices(self) -> int:
         num_devices = self.num_gpus if self.num_gpus > 0 else os.cpu_count()//2
