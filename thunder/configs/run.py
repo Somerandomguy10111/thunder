@@ -17,7 +17,7 @@ from thunder.logging.loggers import WBLogger
 
 @dataclass
 class Descent(ABC):
-    lr : float = None
+    lr : Optional[float] = None
 
     def __post_init__(self):
         self.algorithm : type[Optimizer]  = self.get_algorithm()
@@ -33,38 +33,34 @@ class Descent(ABC):
 
 @dataclass
 class Adam(Descent):
-    betas: Tuple[float, float] = None
-    weight_decay: float = None
+    betas: Optional[Tuple[float, float]] = None
+    weight_decay: Optional[float] = None
 
     def get_algorithm(self) -> type[Optimizer]:
         return torch.optim.Adam
 
-
 @dataclass
 class SGD(Descent):
-    momentum: float = None
-    weight_decay: float = None
+    momentum: Optional[float] = None
+    weight_decay: Optional[float] = None
 
     def get_algorithm(self) -> type[Optimizer]:
         return torch.optim.SGD
 
-
 @dataclass
 class Adagrad(Descent):
-    lr_decay: float = None
-    weight_decay: float = None
+    lr_decay: Optional[float] = None
+    weight_decay: Optional[float] = None
 
     def get_algorithm(self) -> type[Optimizer]:
         return torch.optim.Adagrad
 
-
 @dataclass
 class Adadelta(Descent):
-    weight_decay: float = None
+    weight_decay: Optional[float] = None
 
     def get_algorithm(self) -> type[Optimizer]:
         return torch.optim.Adadelta
-
 
 @dataclass
 class RunConfigs:
