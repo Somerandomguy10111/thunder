@@ -61,6 +61,8 @@ class Thunder(ComputeManaged):
                 self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
+        if not self.wblogger is None:
+            self.wblogger.log_code_state()
 
 
     # ---------------------------------------------------------
