@@ -36,7 +36,7 @@ class ComputeManaged(torch.nn.Module):
         self.pylogger.warning(f'Global default torch dtype set to {target_dtype}')
         torch.set_default_dtype(d=target_dtype)
         if compute_configs.allow_tensor_cores:
-            self.pylogger.warning(f'[Thunder module {self.get_name()}]: Enabling Tensor Cores and TF32')
+            self.pylogger.warning(f'Enabling Tensor Cores and TF32')
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
 

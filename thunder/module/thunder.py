@@ -51,7 +51,7 @@ class Thunder(ComputeManaged):
         train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
         self.pylogger.info(msg=f'Starting training')
-        for epoch in range(run_configs.epochs):
+        for epoch in range(1,run_configs.epochs+1):
             self.pylogger.info(f'Training epoch number {epoch}...')
             self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=train_model)
             if val_loader:
