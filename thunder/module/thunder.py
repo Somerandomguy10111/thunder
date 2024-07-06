@@ -121,36 +121,36 @@ class Thunder(ComputeManaged):
         self.metric_map = {}
 
     @staticmethod
-    def add_metric(name_override : Optional[str] = None, report_average : bool = False, add_modelname : bool = False):
-
-        def add_metric_decorator(mthd : Callable[..., Tensor | float | list[float]]):
-            def logged_mthd(self: Thunder, *args, **kwargs):
+    def add_metric(name_override: Optional[str] = None, report_average: bool = False, add_modelname: bool = False):
+        def add_metric_decorator(mthd: Callable[..., Tensor | float | list[float]]):
+            def logged_mthd(self : Thunder, *args, **kwargs):
                 result = mthd(self, *args, **kwargs)
-                metric_name = name_override if not name_override is None else mthd.__name__
+                metric_name = name_override if name_override is not None else mthd.__name__
                 if add_modelname:
                     metric_name = f'{self.get_name()}_{metric_name}'
-
-                try:
-                    logged_values = copy.copy(result)
-                    if isinstance(logged_values, Tensor):
-                        if logged_values.dim() > 1:
-                            raise ValueError(f'Can only log 0 axis (scalars) or 1 axis tensors (vectors).'
-                                             f' Metric \"{metric_name}\" has {logged_values.dim()} axes')
-                        logged_values = logged_values.tolist()
-                    if isinstance(logged_values, list):
-                        logged_values = [float(x) for x in logged_values]
-                    if isinstance(logged_values, float):
-                        logged_values = [logged_values]
-                    logged_values: list[float]
-
-                    if not metric_name in self.metric_map:
-                        self.metric_map[metric_name] = Metric(log_average=report_average)
-                    self.metric_map[metric_name].add(new_values=logged_values)
-
-                except Exception as e:
-                    thunderLogger.warning(f'Failed to log metric \"{metric_name}\": {e}')
-
+                self.log_metric(result=result, metric_name=metric_name, report_average=report_average)
                 return result
-            return logged_mthd
 
+            return logged_mthd
         return add_metric_decorator
+
+
+
+    def log_metric(self,result, metric_name, report_average : bool):
+        try:
+            logged_values = copy.copy(result)
+            if isinstance(logged_values, Tensor):
+                if logged_values.dim() > 1:
+                    msg = f'Can only log 0 axis (scalars) or 1 axis tensors (vectors). Metric "{metric_name}" has {logged_values.dim()} axes'
+                    raise ValueError(msg)
+                logged_values = logged_values.tolist()
+            if isinstance(logged_values, list):
+                logged_values = [float(x) for x in logged_values]
+            if isinstance(logged_values, float):
+                logged_values = [logged_values]
+
+            if metric_name not in self.metric_map:
+                self.metric_map[metric_name] = Metric(log_average=report_average)
+            self.metric_map[metric_name].add(new_values=logged_values)
+        except Exception as e:
+            thunderLogger.warning(f'Failed to log metric "{metric_name}": {e}')
