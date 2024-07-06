@@ -9,6 +9,7 @@ from wandb.sdk.wandb_run import Run
 from holytools.logging import LoggerFactory
 from .metric import Metric
 
+
 # ---------------------------------------------------------
 class WBLogger:
     def __init__(self, run : Run):
@@ -45,7 +46,7 @@ class WBLogger:
     def log_code_state(self):
         repo_path = os.getcwd()
         try:
-            repo = Repo(repo_path)
+            repo = Repo(repo_path, search_parent_directories=True)
             commit_hash = repo.head.commit.hexsha
             git_diff = repo.git.diff()
 
@@ -60,7 +61,6 @@ class WBLogger:
             self.console_logger.warning(f"Failed to log code state because {repo_path} is not a Git repository.")
         except Exception as e:
             self.console_logger.warning(f"Failed to log code state with error: {e}")
-
 
     # ---------------------------------------------------------
     # logging (interface)
