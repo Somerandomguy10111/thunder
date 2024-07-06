@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from abc import abstractmethod
+from logging import Logger
 
 import torch
 from GPUtil import GPU
@@ -9,8 +10,8 @@ from torch import device as torchdevice
 from torch import dtype as torchdtype
 from torch.utils.data import DataLoader, Dataset
 
+from holytools.logging import LoggerFactory
 from thunder.configs.compute import ComputeConfigs
-from thunder.logging import thunderLogger
 
 import GPUtil
 
@@ -19,22 +20,23 @@ import GPUtil
 class ComputeManaged(torch.nn.Module):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
+        self.pylogger : Logger = LoggerFactory.make_logger(name=self.get_name(), include_logger_name=True)
         self.compute_configs : ComputeConfigs = compute_configs
         self.gpus : list[GPU] = GPUtil.getGPUs()[:self.compute_configs.num_gpus]
         self.set_compute_defaults(compute_configs)
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
-        thunderLogger.info(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
+        self.pylogger.info(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
 
     def set_compute_defaults(self, compute_configs : ComputeConfigs):
         target_device, target_dtype = compute_configs.device, compute_configs.dtype
 
-        thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch device set to {target_device}')
+        self.pylogger.warning(f'Global default torch device set to {target_device}')
         torch.set_default_device(device=target_device)
-        thunderLogger.warning(f'[Thunder module {self.get_name()}]: Global default torch dtype set to {target_dtype}')
+        self.pylogger.warning(f'Global default torch dtype set to {target_dtype}')
         torch.set_default_dtype(d=target_dtype)
         if compute_configs.allow_tensor_cores:
-            thunderLogger.warning(f'[Thunder module {self.get_name()}]: Enabling Tensor Cores and TF32')
+            self.pylogger.warning(f'[Thunder module {self.get_name()}]: Enabling Tensor Cores and TF32')
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
 
@@ -83,7 +85,7 @@ class ComputeManaged(torch.nn.Module):
 
     @classmethod
     def get_name(cls) -> str:
-        return cls.__name__
+        return f'Thunder module {cls.__name__}'
 
     @property
     def device(self):

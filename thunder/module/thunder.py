@@ -1,15 +1,14 @@
 import copy
-import os.path
 from abc import abstractmethod
 from typing import Optional, Callable
 
 import torch
-from holytools.userIO import TrackedInt
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
+from holytools.userIO import TrackedInt
 from thunder.configs import RunConfigs, ComputeConfigs, Devices
-from thunder.logging import Metric, WBLogger, thunderLogger
+from thunder.logging import Metric, WBLogger
 from .managed import ComputeManaged
 
 
@@ -19,10 +18,10 @@ class Thunder(ComputeManaged):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__(compute_configs=compute_configs)
         self.wblogger : Optional[WBLogger] = None
+
         self.metric_map : dict[str, Metric] = {}
         self.__set__model__()
         self.to(dtype=compute_configs.dtype, device=compute_configs.device)
-
 
     @abstractmethod
     def __set__model__(self):
@@ -46,14 +45,14 @@ class Thunder(ComputeManaged):
             val_loader = self.make_dataloader(dataset=val_data, batch_size=run_configs.batch_size)
         else:
             val_loader = None
-        if run_configs.enable_logging:
+        if run_configs.enable_wb_logging:
             self.wblogger = run_configs.get_wandb_logger()
 
         train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
-        thunderLogger.info(msg=f'[Thunder module {self.get_name()}]: Starting training')
+        self.pylogger.info(msg=f'Starting training')
         for epoch in range(run_configs.epochs):
-            thunderLogger.info(f'[Thunder module {self.get_name()}]: Training epoch number {epoch}...')
+            self.pylogger.info(f'Training epoch number {epoch}...')
             self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=train_model)
             if val_loader:
                 self.validate_epoch(val_loader=val_loader)
@@ -153,4 +152,4 @@ class Thunder(ComputeManaged):
                 self.metric_map[metric_name] = Metric(log_average=report_average)
             self.metric_map[metric_name].add(new_values=logged_values)
         except Exception as e:
-            thunderLogger.warning(f'Failed to log metric "{metric_name}": {e}')
+            self.pylogger.warning(f'Failed to log metric "{metric_name}": {e}')

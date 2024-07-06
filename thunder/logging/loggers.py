@@ -9,10 +9,6 @@ from wandb.sdk.wandb_run import Run
 from holytools.logging import LoggerFactory
 from .metric import Metric
 
-thunderLogger = LoggerFactory.make_logger(name=__name__)
-
-
-
 # ---------------------------------------------------------
 class WBLogger:
     def __init__(self, run : Run):
@@ -20,6 +16,7 @@ class WBLogger:
         self.current_batch : int = 0
         self.current_epoch : int = 0
         self.completed_subruns : int = 0
+        self.console_logger = LoggerFactory.make_logger(name=self.__class__.__name__)
 
     @classmethod
     def wandb_is_available(cls) -> bool:
@@ -58,11 +55,11 @@ class WBLogger:
                 type='code',
                 description=f'Git diff for commit {commit_hash}'
             )
-            thunderLogger.info(f"Logged current code state as commit {commit_hash} and diff.")
+            self.console_logger.info(f"Logged current code state as commit {commit_hash} and diff.")
         except InvalidGitRepositoryError:
-            thunderLogger.warning(f"Failed to log code state because {repo_path} is not a Git repository.")
+            self.console_logger.warning(f"Failed to log code state because {repo_path} is not a Git repository.")
         except Exception as e:
-            thunderLogger.warning(f"Failed to log code state with error: {e}")
+            self.console_logger.warning(f"Failed to log code state with error: {e}")
 
 
     # ---------------------------------------------------------

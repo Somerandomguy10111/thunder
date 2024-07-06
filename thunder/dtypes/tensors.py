@@ -1,6 +1,7 @@
 from __future__ import annotations
+
 import torch
-from typing import Iterator
+
 
 class Tensor1D(torch.Tensor):
     @staticmethod

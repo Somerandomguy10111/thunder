@@ -72,7 +72,7 @@ class RunConfigs:
     save_on_epoch : bool = True
     project_name : str = 'unnamed_project'
     run_name : Optional[str] = None
-    enable_logging : bool = False
+    enable_wb_logging : bool = False
     wandb_logger : Optional[WBLogger] = None
 
 
