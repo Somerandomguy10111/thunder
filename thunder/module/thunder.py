@@ -45,7 +45,7 @@ class Thunder(ComputeManaged):
             val_loader = self.make_dataloader(dataset=val_data, batch_size=run_configs.batch_size)
         else:
             val_loader = None
-        if run_configs.enable_wb_logging:
+        if run_configs.enable_wandb:
             self.wblogger = run_configs.get_wandb_logger()
 
         train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self

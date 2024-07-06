@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import tempfile
 
 from GPUtil import GPU
 from git import Repo, InvalidGitRepositoryError
@@ -49,14 +50,15 @@ class WBLogger:
             repo = Repo(repo_path, search_parent_directories=True)
             commit_hash = repo.head.commit.hexsha
             git_diff = repo.git.diff()
+            with tempfile.NamedTemporaryFile(delete=False, mode='w+', suffix='.diff') as tmpfile:
+                content = f'Git diff for commit {commit_hash}' + '\n' + 50*'-' + '\n'
+                content += git_diff
 
-            self.run.log_artifact(
-                artifact_or_path=git_diff,
-                name='git_diff',
-                type='code',
-                description=f'Git diff for commit {commit_hash}'
-            )
-            self.console_logger.info(f"Logged current code state as commit {commit_hash} and diff.")
+                tmpfile.write(content)
+                tmpfile_path = tmpfile.name
+            self.run.log_artifact(artifact_or_path=tmpfile_path,name=f'git_diff',type='code')
+
+            self.console_logger.info(f"Logged current code state as commit {commit_hash} and diff from {tmpfile_path}")
         except InvalidGitRepositoryError:
             self.console_logger.warning(f"Failed to log code state because {repo_path} is not a Git repository.")
         except Exception as e:
