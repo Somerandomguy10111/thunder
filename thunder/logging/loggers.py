@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 from GPUtil import GPU
+from git import Repo, InvalidGitRepositoryError
 from wandb.sdk.wandb_run import Run
 
 from holytools.logging import LoggerFactory
@@ -35,6 +36,26 @@ class WBLogger:
 
     def increment_batch(self):
         self.current_batch += 1
+
+    def log_code_state(self):
+        repo_path = os.getcwd()
+        try:
+            repo = Repo(repo_path)
+            commit_hash = repo.head.commit.hexsha
+            git_diff = repo.git.diff()
+
+            self.run.log_artifact(
+                artifact_or_path=git_diff,
+                name='git_diff',
+                type='code',
+                description=f'Git diff for commit {commit_hash}'
+            )
+            thunderLogger.info(f"Logged current code state as commit {commit_hash} and diff.")
+        except InvalidGitRepositoryError:
+            thunderLogger.warning(f"Failed to log code state because {repo_path} is not a Git repository.")
+        except Exception as e:
+            thunderLogger.warning(f"Failed to log code state with error: {e}")
+
 
     # ---------------------------------------------------------
     # logging (interface)
