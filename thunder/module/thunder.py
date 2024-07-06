@@ -47,7 +47,7 @@ class Thunder(ComputeManaged):
         else:
             val_loader = None
         if run_configs.enable_logging:
-            self.wblogger = run_configs.make_wandb_logger()
+            self.wblogger = run_configs.get_wandb_logger()
 
         train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
@@ -62,7 +62,7 @@ class Thunder(ComputeManaged):
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
         if not self.wblogger is None:
-            self.wblogger.log_code_state()
+            self.wblogger.finish_subrun()
 
 
     # ---------------------------------------------------------
@@ -121,13 +121,14 @@ class Thunder(ComputeManaged):
         self.metric_map = {}
 
     @staticmethod
-    def add_metric(name_override : Optional[str] = None, report_average : bool = False):
+    def add_metric(name_override : Optional[str] = None, report_average : bool = False, add_modelname : bool = False):
 
         def add_metric_decorator(mthd : Callable[..., Tensor | float | list[float]]):
-            metric_name = name_override if not name_override is None else mthd.__name__
-
             def logged_mthd(self: Thunder, *args, **kwargs):
                 result = mthd(self, *args, **kwargs)
+                metric_name = name_override if not name_override is None else mthd.__name__
+                if add_modelname:
+                    metric_name = f'{self.get_name()}_{metric_name}'
 
                 try:
                     logged_values = copy.copy(result)
@@ -142,7 +143,7 @@ class Thunder(ComputeManaged):
                         logged_values = [logged_values]
                     logged_values: list[float]
 
-                    if not mthd.__name__ in self.metric_map:
+                    if not metric_name in self.metric_map:
                         self.metric_map[metric_name] = Metric(log_average=report_average)
                     self.metric_map[metric_name].add(new_values=logged_values)
 

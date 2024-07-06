@@ -73,21 +73,25 @@ class RunConfigs:
     project_name : str = 'unnamed_project'
     run_name : Optional[str] = None
     enable_logging : bool = False
+    wandb_logger : Optional[WBLogger] = None
 
 
-    def make_wandb_logger(self) -> WBLogger:
-        config = {
-            'lr': self.descent.lr,
-            'batch_size': self.batch_size,
-            'optimizer': self.descent.get_algorithm().__name__,
-            'epochs': self.epochs,
-            'model_architecture': 'unnamed architecture',
-            'dataset': 'unnamed dataset',
-            'experiment_name': 'unnamed experiment',
-            'step_metric' : 'epoch',
-        }
-        log_dirpath = os.path.expanduser(path='~/.wb_logs')
-        wandb_run = wandb.init(project=self.project_name, name=self.run_name, config=config, dir=log_dirpath)
-        return WBLogger(run=wandb_run)
+    def get_wandb_logger(self) -> WBLogger:
+        if self.wandb_logger is None:
+            config = {
+                'lr': self.descent.lr,
+                'batch_size': self.batch_size,
+                'optimizer': self.descent.get_algorithm().__name__,
+                'epochs': self.epochs,
+                'model_architecture': 'unnamed architecture',
+                'dataset': 'unnamed dataset',
+                'experiment_name': 'unnamed experiment',
+                'step_metric' : 'epoch',
+            }
+            log_dirpath = os.path.expanduser(path='~/.wb_logs')
+            wandb_run = wandb.init(project=self.project_name, name=self.run_name, config=config, dir=log_dirpath)
+            self.wandb_logger = WBLogger(run=wandb_run)
+
+        return self.wandb_logger
 
 

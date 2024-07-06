@@ -1,6 +1,6 @@
 import torch
 from holytools.devtools import Unittest
-from tests.mnist import MnistMLP
+from tests.mnist import MnistMLP, MnistMLPVariation
 from torchvision import datasets, transforms
 
 
@@ -29,10 +29,14 @@ class TestWBLogging(Unittest):
         if not WBLogger.wandb_is_available():
             self.skipTest(reason=f'Wandb is unavailable')
 
-        compute_configs = ComputeConfigs(num_gpus=1, dtype=torch.float64)
         run_configs = RunConfigs(epochs=2, enable_logging=True, run_name=f't_wandb_run')
+        compute_configs = ComputeConfigs(num_gpus=1, dtype=torch.float64)
         mlp = MnistMLP(compute_configs=compute_configs)
         mlp.do_training(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=run_configs)
+
+        mlp2 = MnistMLPVariation(compute_configs=compute_configs)
+        mlp2.do_training(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=run_configs)
+
 
 
 if __name__ == '__main__':

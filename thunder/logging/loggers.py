@@ -19,6 +19,7 @@ class WBLogger:
         self.run : Run = run
         self.current_batch : int = 0
         self.current_epoch : int = 0
+        self.completed_subruns : int = 0
 
     @classmethod
     def wandb_is_available(cls) -> bool:
@@ -28,6 +29,13 @@ class WBLogger:
             return True
         else:
             return False
+
+    def finish_subrun(self):
+        self.log_code_state()
+        self.current_epoch = 0
+        self.current_batch = 0
+        self.completed_subruns += 1
+
     # ---------------------------------------------------------
     # increment
 
@@ -96,6 +104,7 @@ class WBLogger:
     def _log(self, metric_dict: dict[str, int | float]):
         metric_dict['epoch'] = self.current_epoch
         metric_dict['batch'] = self.current_batch
+        metric_dict['subruns'] = self.completed_subruns
         self.run.log(data=metric_dict)
 
 
