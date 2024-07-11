@@ -127,7 +127,7 @@ class Thunder(ComputeManaged):
                 metric_name = name_override if name_override is not None else mthd.__name__
                 if add_modelname:
                     metric_name = f'{self.get_name()}_{metric_name}'
-                self.log_metric(result=result, metric_name=metric_name, report_average=report_average)
+                self.save_metric(result=result, metric_name=metric_name, report_average=report_average)
                 return result
 
             return logged_mthd
@@ -135,7 +135,7 @@ class Thunder(ComputeManaged):
 
 
 
-    def log_metric(self,result, metric_name, report_average : bool):
+    def save_metric(self, result, metric_name, report_average : bool):
         try:
             logged_values = copy.copy(result)
             if isinstance(logged_values, Tensor):
