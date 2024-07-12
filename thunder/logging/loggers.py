@@ -95,7 +95,8 @@ class WBLogger:
         self.log_quantity(name=f'System/{name}', value=value)
 
     def log_quantity(self, name: str, value: float):
-        self._log(metric_dict={name: value})
+        conditional_subruns = f'_{self.completed_subruns}' if self.completed_subruns > 0 else ''
+        self._log(metric_dict={f'{name}{conditional_subruns}': value})
 
     # ---------------------------------------------------------
     # logging (internal)
