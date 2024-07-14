@@ -10,6 +10,7 @@ from wandb.sdk.wandb_run import Run
 from holytools.logging import LoggerFactory
 from .metric import Metric
 
+console_logger = LoggerFactory.make_logger(name='Wandb')
 
 # ---------------------------------------------------------
 class WBLogger:
@@ -17,7 +18,6 @@ class WBLogger:
         self.run : Run = run
         self.current_batch : int = 0
         self.current_epoch : int = 0
-        self.console_logger = LoggerFactory.make_logger(name=self.__class__.__name__)
 
     @classmethod
     def wandb_is_available(cls) -> bool:
@@ -56,11 +56,11 @@ class WBLogger:
                 tmpfile_path = tmpfile.name
             self.run.log_artifact(artifact_or_path=tmpfile_path,name=f'git_diff',type='code')
 
-            self.console_logger.info(f"Logged current code state as commit {commit_hash} and diff from {tmpfile_path}")
+            console_logger.info(f"Logged current code state as commit {commit_hash} and diff from {tmpfile_path}")
         except InvalidGitRepositoryError:
-            self.console_logger.warning(f"Failed to log code state because {repo_path} is not a Git repository.")
+            console_logger.warning(f"Failed to log code state because {repo_path} is not a Git repository.")
         except Exception as e:
-            self.console_logger.warning(f"Failed to log code state with error: {e}")
+            console_logger.warning(f"Failed to log code state with error: {e}")
 
     # ---------------------------------------------------------
     # logging (interface)
