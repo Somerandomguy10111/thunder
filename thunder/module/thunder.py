@@ -74,11 +74,9 @@ class Thunder(ComputeManaged):
         tracked_int = TrackedInt(start_value=0, finish_value=min_batches)
 
         for batch in train_loader:
-            inputs, labels = batch
-            loss = self.get_loss(predicted=model(inputs), target=labels)
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
+            inputs, target = batch
+            self.backpropagate(predicted=model(inputs), target=target)
+            self.gradient_step(optimizer=optimizer)
 
             tracked_int.increment(to_add=1)
             if not self.wblogger is None:
@@ -93,6 +91,14 @@ class Thunder(ComputeManaged):
             self.wblogger.log_quantity(name='epoch', value=self.wblogger.current_epoch)
             self.log_batch_metrics(is_training=True)
 
+    def backpropagate(self, predicted : Tensor, target : Tensor):
+        loss = self.get_loss(predicted=predicted, target=target)
+        loss.backward()
+
+    @staticmethod
+    def gradient_step(optimizer : torch.optim.Optimizer):
+        optimizer.step()
+        optimizer.zero_grad()
 
     def validate_epoch(self, val_loader : DataLoader):
         self.eval()
