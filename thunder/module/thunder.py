@@ -75,7 +75,8 @@ class Thunder(ComputeManaged):
 
         for batch in train_loader:
             inputs, target = batch
-            self.backpropagate(predicted=model(inputs), target=target)
+            loss = self.get_loss(predicted=model(inputs), target=target)
+            self.backpropagate(loss=loss)
             self.gradient_step(optimizer=optimizer)
 
             tracked_int.increment(to_add=1)
@@ -91,8 +92,8 @@ class Thunder(ComputeManaged):
             self.wblogger.log_quantity(name='epoch', value=self.wblogger.current_epoch)
             self.log_batch_metrics(is_training=True)
 
-    def backpropagate(self, predicted : Tensor, target : Tensor):
-        loss = self.get_loss(predicted=predicted, target=target)
+    @staticmethod
+    def backpropagate(loss : Tensor):
         loss.backward()
 
     @staticmethod
@@ -115,7 +116,7 @@ class Thunder(ComputeManaged):
         pass
 
     # ---------------------------------------------------------
-    # logging
+    # metrics
 
     def log_compute_resources(self):
         if self.compute_configs.device == Devices.gpu:
@@ -138,7 +139,6 @@ class Thunder(ComputeManaged):
 
             return logged_mthd
         return add_metric_decorator
-
 
 
     def save_metric(self, result, metric_name, report_average : bool):
