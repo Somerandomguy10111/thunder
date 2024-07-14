@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tempfile
 
+import wandb
 from GPUtil import GPU
 from git import Repo, InvalidGitRepositoryError
 from wandb.sdk.wandb_run import Run
@@ -18,6 +19,7 @@ class WBLogger:
         self.run : Run = run
         self.current_batch : int = 0
         self.current_epoch : int = 0
+        self.is_finished : bool = False
 
     @classmethod
     def wandb_is_available(cls) -> bool:
@@ -30,8 +32,8 @@ class WBLogger:
 
     def finish(self):
         self.log_code_state()
-        self.current_epoch = 0
-        self.current_batch = 0
+        self.is_finished = True
+        wandb.finish()
 
     # ---------------------------------------------------------
     # increment
@@ -99,6 +101,9 @@ class WBLogger:
     # logging (internal)
 
     def _log(self, metric_dict: dict[str, int | float]):
+        if self.is_finished:
+            raise ValueError("Cannot log metric because the run is already finished.")
+
         metric_dict['epoch'] = self.current_epoch
         metric_dict['batch'] = self.current_batch
         self.run.log(data=metric_dict)
