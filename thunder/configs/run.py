@@ -76,6 +76,7 @@ class RunConfigs:
     wandb_logger : Optional[WBLogger] = None
 
 
+
     def get_wandb_logger(self) -> WBLogger:
         if self.wandb_logger is None:
             config = {

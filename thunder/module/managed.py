@@ -20,7 +20,7 @@ import GPUtil
 class ComputeManaged(torch.nn.Module):
     def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
         super().__init__()
-        self.pylogger : Logger = LoggerFactory.make_logger(name=self.get_name(), include_logger_name=True)
+        self.pylogger : Logger = LoggerFactory.get_or_make(name=self.get_name(), include_logger_name=True)
         self.compute_configs : ComputeConfigs = compute_configs
         self.gpus : list[GPU] = GPUtil.getGPUs()[:self.compute_configs.num_gpus]
         self.set_compute_defaults(compute_configs)

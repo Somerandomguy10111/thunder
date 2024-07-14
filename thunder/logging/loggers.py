@@ -17,7 +17,6 @@ class WBLogger:
         self.run : Run = run
         self.current_batch : int = 0
         self.current_epoch : int = 0
-        self.completed_subruns : int = 0
         self.console_logger = LoggerFactory.make_logger(name=self.__class__.__name__)
 
     @classmethod
@@ -29,11 +28,10 @@ class WBLogger:
         else:
             return False
 
-    def finish_subrun(self):
+    def finish(self):
         self.log_code_state()
         self.current_epoch = 0
         self.current_batch = 0
-        self.completed_subruns += 1
 
     # ---------------------------------------------------------
     # increment
@@ -86,17 +84,16 @@ class WBLogger:
         self.log_system(name='GPU memory load', value=memory_load_factor)
 
     def log_validation_quantity(self, name: str, value: float):
-        self.log_quantity(name=f'Validation/{name}', value=value)
+        self.log_quantity(name=f'Validation {name}', value=value)
 
     def log_training_quantity(self, name: str, value: float):
-        self.log_quantity(name=f'Training/{name}', value=value)
+        self.log_quantity(name=f'Training {name}', value=value)
 
     def log_system(self, name : str, value : float):
         self.log_quantity(name=f'System/{name}', value=value)
 
     def log_quantity(self, name: str, value: float):
-        subrun_identifier = f'_{self.completed_subruns+1}'
-        self._log(metric_dict={f'{name}{subrun_identifier}': value})
+        self._log(metric_dict={f'{name}': value})
 
     # ---------------------------------------------------------
     # logging (internal)
@@ -104,7 +101,6 @@ class WBLogger:
     def _log(self, metric_dict: dict[str, int | float]):
         metric_dict['epoch'] = self.current_epoch
         metric_dict['batch'] = self.current_batch
-        metric_dict['subruns'] = self.completed_subruns
         self.run.log(data=metric_dict)
 
 
