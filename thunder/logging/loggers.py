@@ -11,7 +11,7 @@ from wandb.sdk.wandb_run import Run
 from holytools.logging import LoggerFactory
 from .metric import Metric
 
-console_logger = LoggerFactory.make_logger(name='Wandb')
+console_logger = LoggerFactory.get_logger(name='Wandb')
 
 # ---------------------------------------------------------
 class WBLogger:
