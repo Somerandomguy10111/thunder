@@ -143,10 +143,10 @@ class Thunder(ComputeManaged):
 
     def save_metric(self, result, metric_name, report_average : bool):
         try:
-            if not type(result) in [Tensor, float, list]:
+            if not isinstance(result, Tensor) or isinstance(result, list) or isinstance(result, float):
                 raise ValueError(f'Can only log tensors, floats or lists. Got {type(result)}')
             logged_values = result.clone() if isinstance(result, Tensor) else copy.deepcopy(result)
-            
+
             if isinstance(logged_values, Tensor):
                 if logged_values.dim() > 1:
                     msg = f'Can only log 0 axis (scalars) or 1 axis tensors (vectors). Metric "{metric_name}" has {logged_values.dim()} axes'
