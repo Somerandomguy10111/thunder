@@ -20,6 +20,7 @@ class WBLogger:
         self.current_batch : int = 0
         self.current_epoch : int = 0
         self.is_finished : bool = False
+        self.log_code_state()
 
     @classmethod
     def wandb_is_available(cls) -> bool:
@@ -31,7 +32,6 @@ class WBLogger:
             return False
 
     def finish(self):
-        self.log_code_state()
         self.is_finished = True
         wandb.finish()
 
