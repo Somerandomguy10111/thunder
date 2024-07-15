@@ -89,7 +89,7 @@ class RunConfigs:
                 'experiment_name': 'unnamed experiment',
                 'step_metric' : 'epoch',
             }
-            log_dirpath = os.path.expanduser(path='~/.wb_logs')
+            log_dirpath = os.path.expanduser(path='~/.wblogs')
             wandb_run = wandb.init(project=self.project_name, name=self.run_name, config=config, dir=log_dirpath)
             self.wandb_logger = WBLogger(run=wandb_run)
 
