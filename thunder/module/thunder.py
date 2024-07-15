@@ -143,7 +143,7 @@ class Thunder(ComputeManaged):
 
     def save_metric(self, result, metric_name, report_average : bool):
         try:
-            logged_values = copy.copy(result)
+            logged_values = copy.deepcopy(result)
             if isinstance(logged_values, Tensor):
                 if logged_values.dim() > 1:
                     msg = f'Can only log 0 axis (scalars) or 1 axis tensors (vectors). Metric "{metric_name}" has {logged_values.dim()} axes'
