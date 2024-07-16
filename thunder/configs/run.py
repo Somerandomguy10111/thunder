@@ -11,6 +11,7 @@ import wandb
 from torch import Tensor
 from torch.optim import Optimizer
 
+from holytools.abstract import JsonDataclass
 from thunder.logging.loggers import WBLogger
 
 # ---------------------------------------------------------
@@ -63,36 +64,32 @@ class Adadelta(Descent):
         return torch.optim.Adadelta
 
 @dataclass
-class RunConfigs:
+class RunConfigs(JsonDataclass):
     epochs : int = 1
     batch_size : int = 32
     descent: Descent = field(default_factory=Adam)
-    save_folderpath = os.path.expanduser(f'~/.py_thunder')
+    save_folderpath : str = os.path.expanduser(f'~/.py_thunder')
     save_on_done : bool = True
     save_on_epoch : bool = True
     project_name : str = 'unnamed_project'
     run_name : Optional[str] = None
     enable_wandb : bool = False
-    wandb_logger : Optional[WBLogger] = None
 
+    def make_wandb_logger(self) -> WBLogger:
+        config = {
+            'lr': self.descent.lr,
+            'batch_size': self.batch_size,
+            'optimizer': self.descent.get_algorithm().__name__,
+            'epochs': self.epochs,
+            'model_architecture': 'unnamed architecture',
+            'dataset': 'unnamed dataset',
+            'experiment_name': 'unnamed experiment',
+            'step_metric' : 'epoch',
+        }
+        log_dirpath = os.path.expanduser(path='~/.wblogs')
+        wandb_run = wandb.init(project=self.project_name, name=self.run_name, config=config, dir=log_dirpath)
+        wandb_logger = WBLogger(run=wandb_run)
 
-
-    def get_wandb_logger(self) -> WBLogger:
-        if self.wandb_logger is None:
-            config = {
-                'lr': self.descent.lr,
-                'batch_size': self.batch_size,
-                'optimizer': self.descent.get_algorithm().__name__,
-                'epochs': self.epochs,
-                'model_architecture': 'unnamed architecture',
-                'dataset': 'unnamed dataset',
-                'experiment_name': 'unnamed experiment',
-                'step_metric' : 'epoch',
-            }
-            log_dirpath = os.path.expanduser(path='~/.wblogs')
-            wandb_run = wandb.init(project=self.project_name, name=self.run_name, config=config, dir=log_dirpath)
-            self.wandb_logger = WBLogger(run=wandb_run)
-
-        return self.wandb_logger
+        return wandb_logger
 
 
