@@ -11,8 +11,8 @@ import wandb
 from torch import Tensor
 from torch.optim import Optimizer
 
-from holytools.abstract import JsonDataclass
 from thunder.logging.loggers import WBLogger
+
 
 # ---------------------------------------------------------
 
@@ -64,7 +64,7 @@ class Adadelta(Descent):
         return torch.optim.Adadelta
 
 @dataclass
-class RunConfigs(JsonDataclass):
+class RunConfigs:
     epochs : int = 1
     batch_size : int = 32
     descent: Descent = field(default_factory=Adam)
