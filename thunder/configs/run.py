@@ -64,7 +64,7 @@ class Adadelta(Descent):
         return torch.optim.Adadelta
 
 @dataclass
-class RunConfigs:
+class RunConfig:
     epochs : int = 1
     batch_size : int = 32
     descent: Descent = field(default_factory=Adam)

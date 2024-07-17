@@ -7,7 +7,7 @@ from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
 from holytools.userIO import TrackedInt
-from thunder.configs import RunConfigs, ComputeConfigs, Devices
+from thunder.configs import RunConfig, ComputeConfigs, Devices
 from thunder.logging import Metric, WBLogger
 from .managed import ComputeManaged
 
@@ -35,8 +35,8 @@ class Thunder(ComputeManaged):
     # training routine
 
     def do_training(self, train_data: Dataset,
-                          val_data: Optional[Dataset] = None,
-                          run_configs : RunConfigs = RunConfigs()):
+                    val_data: Optional[Dataset] = None,
+                    run_configs : RunConfig = RunConfig()):
         train_data = self.to_thunder_dataset(dataset=train_data)
         train_loader = self.make_dataloader(dataset=train_data, batch_size=run_configs.batch_size)
 
