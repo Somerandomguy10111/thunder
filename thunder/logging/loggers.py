@@ -118,7 +118,6 @@ def get_highest_version(entity_name: str, project_name: str) -> int:
     version_pattern = re.compile(r"\bV(\d+)\b")
     version_strs = []
     for run in runs:
-        print(run.name)
         matches = version_pattern.findall(run.name)
         if matches:
             version_strs.append(matches[0])
