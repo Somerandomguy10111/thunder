@@ -17,7 +17,7 @@ class ComputeConfig:
 
 
     def __post_init__(self):
-        if self.torch_device.type == 'cuda':
+        if self.torch_device.type == 'cuda' and self.torch_device.index:
             if self.torch_device.index >= torch.cuda.device_count():
                 raise ValueError(f'CUDA device \"{self.torch_device}\" does not exist')
 
