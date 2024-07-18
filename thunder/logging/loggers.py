@@ -111,8 +111,10 @@ class WBLogger:
         self.run.log(data=metric_dict)
 
 
+
 def get_highest_version(entity_name: str, project_name: str) -> int:
-    runs = wandb.api.runs(f"{entity_name}/{project_name}")
+    api = wandb.Api()
+    runs = api.runs(f"{entity_name}/{project_name}")
     version_pattern = re.compile(r"\bV(\d+)\b")
     version_strs = []
     for run in runs:
