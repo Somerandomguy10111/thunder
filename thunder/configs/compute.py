@@ -12,18 +12,22 @@ from torch import dtype, device
 
 @dataclass
 class ComputeConfigs:
-    num_gpus: int = torch.cuda.device_count() if torch.cuda.is_available() else 0
+    torch_device : device = device('cuda') if torch.cuda.is_available() else device('cpu')
     dtype : dtype = torch.float32
     allow_tensor_cores : bool = False
 
-    def get_num_devices(self) -> int:
-        num_devices = self.num_gpus if self.num_gpus > 0 else os.cpu_count()//2
-        return num_devices
+    def get_num_gpus(self) -> int:
+        value = 0
+        if self.torch_device.type == 'cuda':
+            if self.torch_device.index is None:
+                value = torch.cuda.device_count()
+            else:
+                value = 1
+        return value
 
-    @property
-    def device(self) -> torch.device:
-        torch_device = device('cuda') if self.num_gpus > 0 else torch.device('cpu')
-        return torch_device
+    @staticmethod
+    def get_num_cpus() -> int:
+        return os.cpu_count()
 
     def __str__(self):
         the_str = f'ComputeConfigs:\n'
