@@ -40,4 +40,5 @@ class ComputeConfig:
 
 
 if __name__ == "__main__":
-    print(ComputeConfig(torch_device=device(f'cuda:1')))
+    configs = ComputeConfig(torch_device=device(f'cuda:0'))
+    print(configs.get_num_gpus())

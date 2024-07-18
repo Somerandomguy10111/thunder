@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import tempfile
 
 import wandb
@@ -22,8 +23,9 @@ class WBLogger:
         self.is_finished : bool = False
         self.log_code_state()
 
-    @classmethod
-    def wandb_is_available(cls) -> bool:
+
+    @staticmethod
+    def wandb_is_available() -> bool:
         if os.getenv('WANDB_API_KEY'):
             return True
         elif os.path.isfile(os.path.expanduser('~/.netrc')):
@@ -109,5 +111,22 @@ class WBLogger:
         self.run.log(data=metric_dict)
 
 
+def get_highest_version(entity_name: str, project_name: str) -> int:
+    runs = wandb.api.runs(f"{entity_name}/{project_name}")
+    version_pattern = re.compile(r"\bV(\d+)\b")
+    version_strs = []
+    for run in runs:
+        print(run.name)
+        matches = version_pattern.findall(run.name)
+        if matches:
+            version_strs.append(matches[0])
+
+    matched_ints = []
+    for m in version_strs:
+        try:
+            matched_ints.append(int(m))
+        except:
+            pass
+    return max(matched_ints, default=0)
 
 
