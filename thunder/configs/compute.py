@@ -17,12 +17,10 @@ class ComputeConfigs:
     allow_tensor_cores : bool = False
 
     def get_num_gpus(self) -> int:
-        value = 0
         if self.torch_device.type == 'cuda':
-            if self.torch_device.index is None:
-                value = torch.cuda.device_count()
-            else:
-                value = 1
+            value = torch.cuda.device_count() if self.torch_device.index is None else 1
+        else:
+            value = 0
         return value
 
     @staticmethod
