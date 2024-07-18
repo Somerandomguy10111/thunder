@@ -119,7 +119,7 @@ class Thunder(ComputeManaged):
     # metrics
 
     def log_compute_resources(self):
-        if self.compute_configs.device == Devices.gpu:
+        if self.compute_configs.torch_device.type == 'cuda':
             self.wblogger.log_gpu_resources(gpus=self.gpus)
 
     def log_batch_metrics(self, is_training : bool):
