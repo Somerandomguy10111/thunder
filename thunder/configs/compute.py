@@ -10,10 +10,11 @@ from torch import dtype, device
 # ---------------------------------------------------------
 
 @dataclass
-class ComputeConfigs:
+class ComputeConfig:
     torch_device : device = device('cuda') if torch.cuda.is_available() else device('cpu')
     dtype : dtype = torch.float32
     allow_tensor_cores : bool = False
+
 
     def __post_init__(self):
         if self.torch_device.type == 'cuda':
@@ -38,7 +39,5 @@ class ComputeConfigs:
         return the_str
 
 
-
-
 if __name__ == "__main__":
-    print(ComputeConfigs(torch_device=device(f'cuda:1')))
+    print(ComputeConfig(torch_device=device(f'cuda:1')))

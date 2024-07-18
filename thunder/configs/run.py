@@ -68,11 +68,11 @@ class RunConfig:
     epochs : int = 1
     batch_size : int = 32
     descent: Descent = field(default_factory=Adam)
+    run_name: Optional[str] = None
+    project_name: str = 'unnamed_project'
     save_folderpath : str = os.path.expanduser(f'~/.py_thunder')
     save_on_done : bool = True
-    save_on_epoch : bool = True
-    project_name : str = 'unnamed_project'
-    run_name : Optional[str] = None
+    save_on_epoch : bool = False
     enable_wandb : bool = False
 
     def make_wandb_logger(self) -> WBLogger:

@@ -11,25 +11,25 @@ from torch import dtype as torchdtype
 from torch.utils.data import DataLoader, Dataset
 
 from holytools.logging import LoggerFactory
-from thunder.configs.compute import ComputeConfigs
+from thunder.configs.compute import ComputeConfig
 
 import GPUtil
 
 # ---------------------------------------------------------
 
 class ComputeManaged(torch.nn.Module):
-    def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
+    def __init__(self, compute_configs : ComputeConfig = ComputeConfig()):
         super().__init__()
         self.pylogger : Logger = LoggerFactory.get_logger(name=self.get_name(), include_logger_name=True)
-        self.compute_configs : ComputeConfigs = compute_configs
-        self.gpus : list[GPU] = GPUtil.getGPUs()[:self.compute_configs.num_gpus]
+        self.compute_configs : ComputeConfig = compute_configs
+        self.gpus : list[GPU] = GPUtil.getGPUs()[:self.compute_configs.get_num_gpus()]
         self.set_compute_defaults(compute_configs)
         self.__set__model__()
-        self.to(dtype=compute_configs.dtype, device=compute_configs.device)
-        self.pylogger.info(f'Model device, dtype = {self.compute_configs.device}, {self.compute_configs.dtype}')
+        self.to(dtype=compute_configs.dtype, device=compute_configs.torch_device)
+        self.pylogger.info(f'Model device, dtype = {self.compute_configs.torch_device}, {self.compute_configs.dtype}')
 
-    def set_compute_defaults(self, compute_configs : ComputeConfigs):
-        target_device, target_dtype = compute_configs.device, compute_configs.dtype
+    def set_compute_defaults(self, compute_configs : ComputeConfig):
+        target_device, target_dtype = compute_configs.torch_device, compute_configs.dtype
 
         self.pylogger.warning(f'Global default torch device set to {target_device}')
         torch.set_default_device(device=target_device)

@@ -7,7 +7,7 @@ from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 
 from holytools.userIO import TrackedInt
-from thunder.configs import RunConfig, ComputeConfigs, Devices
+from thunder.configs import RunConfig, ComputeConfig
 from thunder.logging import Metric, WBLogger
 from .managed import ComputeManaged
 
@@ -15,13 +15,13 @@ from .managed import ComputeManaged
 # ---------------------------------------------------------
 
 class Thunder(ComputeManaged):
-    def __init__(self, compute_configs : ComputeConfigs = ComputeConfigs()):
+    def __init__(self, compute_configs : ComputeConfig = ComputeConfig()):
         super().__init__(compute_configs=compute_configs)
         self.wblogger : Optional[WBLogger] = None
 
         self.metric_map : dict[str, Metric] = {}
         self.__set__model__()
-        self.to(dtype=compute_configs.dtype, device=compute_configs.device)
+        self.to(dtype=compute_configs.dtype, device=compute_configs.torch_device)
 
     @abstractmethod
     def __set__model__(self):
@@ -48,7 +48,7 @@ class Thunder(ComputeManaged):
         if run_configs.enable_wandb:
             self.wblogger = run_configs.make_wandb_logger()
 
-        train_model = nn.DataParallel(self) if self.compute_configs.num_gpus > 1 else self
+        train_model = nn.DataParallel(self) if self.compute_configs.get_num_gpus() > 1 else self
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
         self.pylogger.info(msg=f'Starting training')
         for epoch in range(1,run_configs.epochs+1):
@@ -58,6 +58,7 @@ class Thunder(ComputeManaged):
                 self.validate_epoch(val_loader=val_loader)
             if run_configs.save_on_epoch:
                 self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
+
         if run_configs.save_on_done:
             self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
         if not self.wblogger is None:
