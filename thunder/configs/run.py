@@ -75,17 +75,18 @@ class RunConfig:
     save_on_epoch : bool = False
     enable_wandb : bool = False
 
-    def make_wandb_logger(self) -> WBLogger:
+    def make_wandb_logger(self, model_name : str = 'unnamed model', **kwargs) -> WBLogger:
         config = {
             'lr': self.descent.lr,
             'batch_size': self.batch_size,
             'optimizer': self.descent.get_algorithm().__name__,
             'epochs': self.epochs,
-            'model_architecture': 'unnamed architecture',
+            'model': model_name,
             'dataset': 'unnamed dataset',
-            'experiment_name': 'unnamed experiment',
             'step_metric' : 'epoch',
         }
+
+        config.update(kwargs)
         log_dirpath = os.path.expanduser(path='~/.wblogs')
         wandb_run = wandb.init(project=self.project_name, name=self.run_name, config=config, dir=log_dirpath)
         wandb_logger = WBLogger(run=wandb_run)
