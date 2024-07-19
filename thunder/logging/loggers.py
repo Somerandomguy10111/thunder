@@ -114,24 +114,30 @@ class WBLogger:
 
 
 def get_highest_version(entity_name: str, project_name: str, run_filter : Optional[str] = None) -> int:
-    api = wandb.Api()
-    runs = api.runs(f"{entity_name}/{project_name}")
-    if not run_filter is None:
-        runs = [r for r in runs if run_filter.lower() in r.name.lower()]
+    try:
+        matched_ints = []
+        api = wandb.Api()
+        runs = api.runs(f"{entity_name}/{project_name}")
+        if not run_filter is None:
+            runs = [r for r in runs if run_filter.lower() in r.name.lower()]
 
-    version_pattern = re.compile(r"\bV(\d+)\b")
-    version_strs = []
-    for run in runs:
-        matches = version_pattern.findall(run.name)
-        if matches:
-            version_strs.append(matches[0])
+        version_pattern = re.compile(r"\bV(\d+)\b")
+        version_strs = []
+        for run in runs:
+            matches = version_pattern.findall(run.name)
+            if matches:
+                version_strs.append(matches[0])
 
-    matched_ints = []
-    for m in version_strs:
-        try:
-            matched_ints.append(int(m))
-        except:
-            pass
-    return max(matched_ints, default=0)
+
+        for m in version_strs:
+            try:
+                matched_ints.append(int(m))
+            except:
+                pass
+        version = max(matched_ints, default=0)
+    except:
+        version = 1
+
+    return version
 
 
