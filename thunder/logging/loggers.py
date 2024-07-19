@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 import tempfile
+from typing import Optional
 
 import wandb
 from GPUtil import GPU
@@ -112,9 +113,12 @@ class WBLogger:
 
 
 
-def get_highest_version(entity_name: str, project_name: str) -> int:
+def get_highest_version(entity_name: str, project_name: str, run_filter : Optional[str] = None) -> int:
     api = wandb.Api()
     runs = api.runs(f"{entity_name}/{project_name}")
+    if not run_filter is None:
+        runs = [r for r in runs if run_filter.lower() in r.name.lower()]
+
     version_pattern = re.compile(r"\bV(\d+)\b")
     version_strs = []
     for run in runs:
