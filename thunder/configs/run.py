@@ -10,7 +10,6 @@ import torch
 import wandb
 from torch import Tensor
 from torch.optim import Optimizer
-from torch.utils.data import Dataset
 
 from thunder.logging.loggers import WBLogger
 
@@ -71,9 +70,9 @@ class RunConfig:
     descent: Descent = field(default_factory=Adam)
     run_name: Optional[str] = None
     project_name: str = 'unnamed_project'
-    save_folderpath : str = os.path.expanduser(f'~/.py_thunder')
-    save_on_done : bool = True
+    save_on_done : bool = False
     save_on_epoch : bool = False
+    save_folderpath: str = os.path.expanduser(f'~/.py_thunder')
     enable_wandb : bool = False
 
     def mk_wandb_logger(self, model_name : str = 'unnamed model', **hparams) -> WBLogger:
