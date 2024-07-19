@@ -15,7 +15,6 @@ class ComputeConfig:
     dtype : dtype = torch.float32
     allow_tensor_cores : bool = False
 
-
     def __post_init__(self):
         if self.torch_device.type == 'cuda' and self.torch_device.index:
             if self.torch_device.index >= torch.cuda.device_count():
@@ -33,7 +32,7 @@ class ComputeConfig:
         return os.cpu_count()
 
     def __str__(self):
-        the_str = f'ComputeConfigs:\n'
+        the_str = f'ComputeConfig:\n'
         for k,v in dataclasses.asdict(self).items():
             the_str += f'-{k}: {v}\n'
         return the_str

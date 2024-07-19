@@ -1,12 +1,14 @@
 import torch
 from holytools.devtools import Unittest
+from torch import device
+
 from tests.mnist import MnistMLP, MnistMLPVariation
 from torchvision import datasets, transforms
 
 
 from torch.utils.data import random_split
 
-from thunder.configs import RunConfigs, ComputeConfigs
+from thunder.configs import RunConfig, ComputeConfig
 from thunder.logging import WBLogger
 
 
@@ -29,8 +31,8 @@ class TestWBLogging(Unittest):
         if not WBLogger.wandb_is_available():
             self.skipTest(reason=f'Wandb is unavailable')
 
-        run_configs = RunConfigs(epochs=2, enable_wandb=True, run_name=f't_wandb_run')
-        compute_configs = ComputeConfigs(num_gpus=1, dtype=torch.float64)
+        run_configs = RunConfig(epochs=2, enable_wandb=True, run_name=f't_wandb_run', batch_size=16)
+        compute_configs = ComputeConfig(torch_device=device(f'cuda:0'), dtype=torch.float64)
         mlp = MnistMLP(compute_configs=compute_configs)
         mlp.do_training(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=run_configs)
 

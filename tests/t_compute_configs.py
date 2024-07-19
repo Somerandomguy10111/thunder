@@ -3,21 +3,21 @@ from holytools.devtools import Unittest
 from tests.mnist import MnistMLP
 from torchvision import datasets, transforms
 
-from thunder.configs import RunConfigs, ComputeConfigs
+from thunder.configs import RunConfig, ComputeConfig
 
 
 # ---------------------------------------------------------
 
-class TestComputeConfigs(Unittest):
+class TestComputeConfig(Unittest):
     @classmethod
     def setUpClass(cls):
         transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
         cls.mnist_train = datasets.MNIST('/tmp/mnist', train=True, download=True, transform=transform)
         cls.mnist_test = datasets.MNIST('/tmp/mnist', train=False, download=True, transform=transform)
-        cls.run_configs = RunConfigs(epochs=1)
+        cls.run_configs = RunConfig(epochs=1)
 
-        cls.gpu_configs = ComputeConfigs(num_gpus=1, dtype=torch.float64)
-        cls.cpu_configs = ComputeConfigs(num_gpus=0, dtype=torch.float64)
+        cls.gpu_configs = ComputeConfig(num_gpus=1, dtype=torch.float64)
+        cls.cpu_configs = ComputeConfig(num_gpus=0, dtype=torch.float64)
 
     # ---------------------------------------------------------
     # configs
@@ -49,10 +49,10 @@ class TestComputeConfigs(Unittest):
 
 
     def test_cpu_training(self):
-        compute_configs = ComputeConfigs(num_gpus=0, dtype=torch.float64)
+        compute_configs = ComputeConfig(num_gpus=0, dtype=torch.float64)
         mlp = MnistMLP(compute_configs=compute_configs)
         mlp.do_training(train_data=self.mnist_train, run_configs=self.run_configs)
 
 
 if __name__ == '__main__':
-    TestComputeConfigs.execute_all()
+    TestComputeConfig.execute_all()

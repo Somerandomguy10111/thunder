@@ -10,6 +10,7 @@ import torch
 import wandb
 from torch import Tensor
 from torch.optim import Optimizer
+from torch.utils.data import Dataset
 
 from thunder.logging.loggers import WBLogger
 
@@ -75,18 +76,17 @@ class RunConfig:
     save_on_epoch : bool = False
     enable_wandb : bool = False
 
-    def make_wandb_logger(self, model_name : str = 'unnamed model', **kwargs) -> WBLogger:
+    def mk_wandb_logger(self, model_name : str = 'unnamed model', **hparams) -> WBLogger:
         config = {
             'lr': self.descent.lr,
             'batch_size': self.batch_size,
             'optimizer': self.descent.get_algorithm().__name__,
             'epochs': self.epochs,
             'model': model_name,
-            'dataset': 'unnamed dataset',
             'step_metric' : 'epoch',
         }
+        config.update(hparams)
 
-        config.update(kwargs)
         log_dirpath = os.path.expanduser(path='~/.wblogs')
         wandb_run = wandb.init(project=self.project_name, name=self.run_name, config=config, dir=log_dirpath)
         wandb_logger = WBLogger(run=wandb_run)
