@@ -54,15 +54,14 @@ class Thunder(ComputeManaged):
         for epoch in range(1,run_configs.epochs+1):
             self.pylogger.info(f'Training epoch number {epoch}...')
             self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=train_model)
+            self.on_epoch_end()
             if val_loader:
                 self.validate_epoch(val_loader=val_loader)
-            if run_configs.save_on_epoch:
-                self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_{epoch}.pth')
 
-        if run_configs.save_on_done:
-            self.save(fpath=f'{run_configs.save_folderpath}/{self.get_name()}_final.pth')
+        self.on_training_end()
         if not self.wblogger is None:
             self.wblogger.finish()
+
 
 
     # ---------------------------------------------------------
@@ -114,6 +113,15 @@ class Thunder(ComputeManaged):
 
     @abstractmethod
     def get_loss(self, predicted : Tensor, target : Tensor) -> Tensor:
+        pass
+
+    # ---------------------------------------------------------
+    #  callbacks
+
+    def on_epoch_end(self):
+        pass
+
+    def on_training_end(self):
         pass
 
     # ---------------------------------------------------------
