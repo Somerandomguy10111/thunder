@@ -54,11 +54,11 @@ class Thunder(ComputeManaged):
         for epoch in range(1,run_configs.epochs+1):
             self.pylogger.info(f'Training epoch number {epoch}...')
             self.train_epoch(train_loader=train_loader, optimizer=optimizer, model=train_model)
-            self.on_epoch_end()
+            self.on_epoch_end(epoch, run_configs)
             if val_loader:
                 self.validate_epoch(val_loader=val_loader)
 
-        self.on_training_end()
+        self.on_training_end(run_configs)
         if not self.wblogger is None:
             self.wblogger.finish()
 
@@ -118,10 +118,10 @@ class Thunder(ComputeManaged):
     # ---------------------------------------------------------
     #  callbacks
 
-    def on_epoch_end(self):
+    def on_epoch_end(self, epoch : int, run_config : RunConfig, *args, **kwargs):
         pass
 
-    def on_training_end(self):
+    def on_training_end(self, *args, **kwargs):
         pass
 
     # ---------------------------------------------------------
