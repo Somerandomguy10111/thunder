@@ -49,7 +49,8 @@ class Thunder(ComputeManaged):
         train_model = nn.DataParallel(self) if self.compute_configs.get_num_gpus() > 1 else self
         optimizer = run_configs.descent.get_optimizer(params=self.parameters())
         if run_configs.enable_wandb:
-            self.wblogger = self.wb_logger(run_configs=run_configs, train_loader=train_loader, val_data=val_loader)
+            kwargs = {'train_size': len(train_data), 'val_size': len(val_data)}
+            self.wblogger = run_configs.mk_wandb_logger(model_name=self.get_name(), **kwargs)
         self.pylogger.info(msg=f'Starting training')
         for epoch in range(1,run_configs.epochs+1):
             self.pylogger.info(f'Training epoch number {epoch}...')
@@ -126,10 +127,6 @@ class Thunder(ComputeManaged):
 
     # ---------------------------------------------------------
     # metrics
-
-    def wb_logger(self, run_configs : RunConfig, train_loader : DataLoader, val_data : DataLoader) -> WBLogger:
-        hparams = { 'num_train_batches'  : len(train_loader), 'num_val_batches' : len(val_data)}
-        return run_configs.mk_wandb_logger(model_name=self.get_name(), **hparams)
 
     def log_compute_resources(self):
         if self.compute_configs.torch_device.type == 'cuda':

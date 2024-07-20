@@ -110,12 +110,12 @@ class ThunderDataset(Dataset):
         self.device : device = device
         self.dtype : dtype = dtype
 
-    def __len__(self):
+    def __len__(self) -> Optional[int]:
         if hasattr(self.base_dataset, '__len__'):
             # noinspection PyTypeChecker
             return len(self.base_dataset)
         else:
-            raise NotImplementedError
+            return None
 
     def __getitem__(self, idx):
         content = self.base_dataset[idx]
