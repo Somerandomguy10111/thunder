@@ -3,8 +3,9 @@ from __future__ import annotations
 import os
 from abc import abstractmethod
 from logging import Logger
-from typing import Optional, Any
+from typing import Optional
 
+import GPUtil
 import torch
 from GPUtil import GPU
 from torch import device as torchdevice, Tensor
@@ -14,7 +15,6 @@ from torch.utils.data import DataLoader, Dataset
 from holytools.logging import LoggerFactory
 from thunder.configs.compute import ComputeConfig
 
-import GPUtil
 
 # ---------------------------------------------------------
 
