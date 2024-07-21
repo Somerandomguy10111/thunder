@@ -3,11 +3,11 @@ from __future__ import annotations
 import os
 from abc import abstractmethod
 from logging import Logger
-from typing import Optional
+from typing import Optional, Any
 
 import torch
 from GPUtil import GPU
-from torch import device as torchdevice
+from torch import device as torchdevice, Tensor
 from torch import dtype as torchdtype
 from torch.utils.data import DataLoader, Dataset
 
@@ -119,17 +119,28 @@ class ThunderDataset(Dataset):
             return None
 
     def __getitem__(self, idx):
-        content = self.base_dataset[idx]
-        if isinstance(content, tuple):
-            data, label = content
-            if isinstance(data, torch.Tensor):
-                data = data.to(dtype=self.dtype, device=self.device)
-            if isinstance(label, torch.Tensor):
-                label = label.to(dtype=self.dtype, device=self.device)
-            return data, label
-        elif isinstance(content, torch.Tensor) and (self.dtype != content.dtype or self.device != content.device):
-            content = content.to(dtype=self.dtype, device=self.device)
+        item = self.base_dataset[idx]
+        if isinstance(item, tuple):
+            x, y = item
+            if isinstance(x, torch.Tensor):
+                x = self.to_conform_tensor(x)
+            if isinstance(y, torch.Tensor):
+                y = self.to_conform_tensor(y)
+            return x, y
         else:
-            content = content
+            item = item
 
-        return content
+        return item
+
+    def to_conform_tensor(self, t : Tensor):
+        if self.is_compute_conform(tensor=t):
+            return t
+        return t.to(dtype=self.dtype, device=self.device)
+
+
+    def is_compute_conform(self, tensor : Tensor) -> bool:
+        if tensor.dtype != self.dtype:
+            return  False
+        if tensor.device != self.device:
+            return False
+        return True
