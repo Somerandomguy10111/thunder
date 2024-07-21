@@ -121,7 +121,7 @@ def get_highest_version(entity_name: str, project_name: str, run_filter : Option
         if not run_filter is None:
             runs = [r for r in runs if run_filter.lower() in r.name.lower()]
 
-        version_pattern = re.compile(r"\bV(\d+)\b")
+        version_pattern = re.compile(r"V(\d+)\b")
         version_strs = []
         for run in runs:
             matches = version_pattern.findall(run.name)
