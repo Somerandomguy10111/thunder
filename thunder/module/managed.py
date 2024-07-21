@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from abc import abstractmethod
 from logging import Logger
+from typing import Optional
 
 import torch
 from GPUtil import GPU
