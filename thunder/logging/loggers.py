@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import random
 import re
 import tempfile
 from typing import Optional
@@ -33,6 +34,16 @@ class WBLogger:
             return True
         else:
             return False
+
+    @staticmethod
+    def generate_random_name() -> str:
+        adjectives = ["golden", "mystic", "silent", "red", "frozen",
+                      "ancient", "rapid", "quiet", "blue", "distant"]
+        nouns = ["lion", "owl", "river", "tree", "mountain",
+                 "eagle", "forest", "cloud", "star", "wolf"]
+
+        track_name = f"{random.choice(adjectives)}-{random.choice(nouns)}"
+        return track_name
 
     def finish(self):
         self.is_finished = True
