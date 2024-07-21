@@ -127,7 +127,7 @@ class ThunderDataset(Dataset):
             if isinstance(label, torch.Tensor):
                 label = label.to(dtype=self.dtype, device=self.device)
             return data, label
-        elif isinstance(content, torch.Tensor):
+        elif isinstance(content, torch.Tensor) and (self.dtype != content.dtype or self.device != content.device):
             content = content.to(dtype=self.dtype, device=self.device)
         else:
             content = content
