@@ -21,7 +21,7 @@ class Thunder(ComputeManaged):
 
         self.metric_map : dict[str, Metric] = {}
         self.__set__model__()
-        self.to(dtype=compute_configs.dtype, device=compute_configs.torch_device)
+        self.to(dtype=compute_configs.dtype, device=compute_configs.device)
 
     @abstractmethod
     def __set__model__(self):
@@ -129,7 +129,7 @@ class Thunder(ComputeManaged):
     # metrics
 
     def log_compute_resources(self):
-        if self.compute_configs.torch_device.type == 'cuda':
+        if self.compute_configs.device.type == 'cuda':
             self.wblogger.log_gpu_resources(gpus=self.gpus)
 
     def log_batch_metrics(self, is_training : bool):
