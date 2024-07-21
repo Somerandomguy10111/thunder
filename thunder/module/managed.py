@@ -132,13 +132,19 @@ class ThunderDataset(Dataset):
 
         return item
 
+    # ---------------------------------------------------------
+
+
     def to_conform_tensor(self, t : Tensor):
         if self.is_compute_conform(tensor=t):
             return t
+        # print(f'Compute not conform, converting ...')
         return t.to(dtype=self.dtype, device=self.device)
 
 
     def is_compute_conform(self, tensor : Tensor) -> bool:
+        # print(f'self dtype, deviice = {self.dtype}, {self.device}')
+        # print(f'tensor dtype, device = {tensor.dtype}, {tensor.device}')
         if tensor.dtype != self.dtype:
             return  False
         if tensor.device != self.device:
