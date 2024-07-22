@@ -80,7 +80,6 @@ class RunConfig:
             'optimizer': self.descent.get_algorithm().__name__,
             'epochs': self.epochs,
             'model': model_name,
-            'step_metric' : 'epoch',
         }
         config.update(hparams)
 
