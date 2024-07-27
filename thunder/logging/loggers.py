@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import os
 import random
-import re
 import tempfile
-from typing import Optional
 
 import wandb
 from GPUtil import GPU

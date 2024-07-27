@@ -88,6 +88,9 @@ class ComputeManaged(torch.nn.Module):
     def get_name(cls) -> str:
         return f'Thunder module {cls.__name__}'
 
+    def get_num_parameters(self) -> int:
+        return sum(p.numel() for p in self.parameters())
+
     @property
     def device(self):
         try:
