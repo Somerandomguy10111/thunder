@@ -63,8 +63,6 @@ class Thunder(ComputeManaged):
         if not self.wblogger is None:
             self.wblogger.finish()
 
-
-
     # ---------------------------------------------------------
     # optimization
 

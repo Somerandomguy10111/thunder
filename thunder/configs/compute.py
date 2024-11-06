@@ -36,6 +36,9 @@ class ComputeConfig:
             the_str += f'-{k}: {v}\n'
         return the_str
 
+    def __eq__(self, other):
+        return dataclasses.asdict(self) == dataclasses.asdict(other)
+
 
 if __name__ == "__main__":
     configs = ComputeConfig(device=torch.device(f'cuda:0'))

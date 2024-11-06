@@ -16,8 +16,8 @@ class TestComputeConfig(Unittest):
         cls.mnist_test = datasets.MNIST('/tmp/mnist', train=False, download=True, transform=transform)
         cls.run_configs = RunConfig(epochs=1)
 
-        cls.gpu_configs = ComputeConfig(num_gpus=1, dtype=torch.float64)
-        cls.cpu_configs = ComputeConfig(num_gpus=0, dtype=torch.float64)
+        cls.gpu_configs = ComputeConfig(dtype=torch.float64)
+        cls.cpu_configs = ComputeConfig(dtype=torch.float64)
 
     # ---------------------------------------------------------
     # configs
@@ -49,7 +49,7 @@ class TestComputeConfig(Unittest):
 
 
     def test_cpu_training(self):
-        compute_configs = ComputeConfig(num_gpus=0, dtype=torch.float64)
+        compute_configs = ComputeConfig(dtype=torch.float64)
         mlp = MnistMLP(compute_configs=compute_configs)
         mlp.do_training(train_data=self.mnist_train, run_configs=self.run_configs)
 
