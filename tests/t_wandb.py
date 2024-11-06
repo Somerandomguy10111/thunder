@@ -23,8 +23,9 @@ class TestWBLogging(Unittest):
         fraction = 40
         train_target_length = len(mnist_train_full) // fraction
         test_target_length = len(mnist_test_full) // fraction
-        self.mnist_train, _ = random_split(mnist_train_full, [train_target_length, len(mnist_train_full) - train_target_length])
-        self.mnist_test, _ = random_split(mnist_test_full, [test_target_length, len(mnist_test_full) - test_target_length])
+        generator = torch.Generator(device='cuda')
+        self.mnist_train, _ = random_split(mnist_train_full, [train_target_length, len(mnist_train_full) - train_target_length], generator=generator)
+        self.mnist_test, _ = random_split(mnist_test_full, [test_target_length, len(mnist_test_full) - test_target_length], generator=generator)
 
 
     def test_wandb_logging(self):
