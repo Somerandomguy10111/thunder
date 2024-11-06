@@ -13,4 +13,3 @@ dependencies = [
     "gitpython",
     "holytools @ git+https://github.com/Somerandomguy10111/holytools.git"
 ]
-dynamic = ["dependencies"]

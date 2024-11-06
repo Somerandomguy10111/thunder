@@ -23,8 +23,8 @@ class TestWBLogging(Unittest):
         fraction = 40
         train_target_length = len(mnist_train_full) // fraction
         test_target_length = len(mnist_test_full) // fraction
-        self.mnist_train, _ = torch.utils.data.random_split(mnist_train_full, [train_target_length, len(mnist_train_full) - train_target_length])
-        self.mnist_test, _ = torch.utils.data.random_split(mnist_test_full, [test_target_length, len(mnist_test_full) - test_target_length])
+        self.mnist_train, _ = random_split(mnist_train_full, [train_target_length, len(mnist_train_full) - train_target_length])
+        self.mnist_test, _ = random_split(mnist_test_full, [test_target_length, len(mnist_test_full) - test_target_length])
 
 
     def test_wandb_logging(self):
@@ -38,8 +38,6 @@ class TestWBLogging(Unittest):
 
         mlp2 = MnistMLPVariation(compute_configs=compute_configs)
         mlp2.do_training(train_data=self.mnist_train, val_data=self.mnist_test, run_configs=run_configs)
-
-
 
 if __name__ == '__main__':
     TestWBLogging.execute_all()
