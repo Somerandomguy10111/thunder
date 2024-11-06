@@ -1,9 +1,16 @@
 [project]
 name = "Thunder"
-version = "0.2.0"
+version = "0.2.1"
 description = "Really straightforward machine learning using pytorch lightning"
 authors = [{name = "Daniel Hollarek", email = "daniel.hollarek@goglemail.com"}]
+dependencies = [
+    "matplotlib",
+    "torch",
+    "torchvision",
+    "wandb",
+    "tabulate",
+    "gputil",
+    "gitpython",
+    "holytools @ git+https://github.com/Somerandomguy10111/holytools.git"
+]
 dynamic = ["dependencies"]
-
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}

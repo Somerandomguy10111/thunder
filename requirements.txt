@@ -1,8 +1,0 @@
-matplotlib
-torch
-torchvision
-wandb
-holytools @ git+https://git@github.com/Somerandomguy10111/holytools.git
-tabulate
-gputil
-gitpython
