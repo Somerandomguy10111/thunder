@@ -23,7 +23,9 @@ class TestWBLogging(Unittest):
         fraction = 40
         train_target_length = len(mnist_train_full) // fraction
         test_target_length = len(mnist_test_full) // fraction
-        generator = torch.Generator(device='cuda')
+
+        device_str = 'cuda' if torch.cuda.is_available() else 'cpu'
+        generator = torch.Generator(device=device_str)
         self.mnist_train, _ = random_split(mnist_train_full, [train_target_length, len(mnist_train_full) - train_target_length], generator=generator)
         self.mnist_test, _ = random_split(mnist_test_full, [test_target_length, len(mnist_test_full) - test_target_length], generator=generator)
 
